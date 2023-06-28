@@ -98,25 +98,26 @@ def forward(
     # Take the dot product between "query" and "key" to get the raw attention scores.
     attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
 
-    if self.position_embedding_type == 'relative_key' or self.position_embedding_type == 'relative_key_query':
-        raise NotImplementedError('ALiBi is not supported for BERT with position_embedding_type: {}'.format(
-            self.position_embedding_type))
-        #### REMOVES THE FOLLOWING CODE ########
-        # seq_length = hidden_states.size()[1]
-        # position_ids_l = torch.arange(seq_length, dtype=torch.long, device=hidden_states.device).view(-1, 1)
-        # position_ids_r = torch.arange(seq_length, dtype=torch.long, device=hidden_states.device).view(1, -1)
-        # distance = position_ids_l - position_ids_r
-        # positional_embedding = self.distance_embedding(distance + self.max_position_embeddings - 1)
-        # positional_embedding = positional_embedding.to(dtype=query_layer.dtype)  # fp16 compatibility
-        #
-        # if self.position_embedding_type == "relative_key":
-        #     relative_position_scores = torch.einsum("bhld,lrd->bhlr", query_layer, positional_embedding)
-        #     attention_scores = attention_scores + relative_position_scores
-        # elif self.position_embedding_type == "relative_key_query":
-        #     relative_position_scores_query = torch.einsum("bhld,lrd->bhlr", query_layer, positional_embedding)
-        #     relative_position_scores_key = torch.einsum("bhrd,lrd->bhlr", key_layer, positional_embedding)
-        #     attention_scores = attention_scores + relative_position_scores_query + relative_position_scores_key
-        ########################################
+    if self.position_embedding_type in ['relative_key', 'relative_key_query']:
+        raise NotImplementedError(
+            f'ALiBi is not supported for BERT with position_embedding_type: {self.position_embedding_type}'
+        )
+            #### REMOVES THE FOLLOWING CODE ########
+            # seq_length = hidden_states.size()[1]
+            # position_ids_l = torch.arange(seq_length, dtype=torch.long, device=hidden_states.device).view(-1, 1)
+            # position_ids_r = torch.arange(seq_length, dtype=torch.long, device=hidden_states.device).view(1, -1)
+            # distance = position_ids_l - position_ids_r
+            # positional_embedding = self.distance_embedding(distance + self.max_position_embeddings - 1)
+            # positional_embedding = positional_embedding.to(dtype=query_layer.dtype)  # fp16 compatibility
+            #
+            # if self.position_embedding_type == "relative_key":
+            #     relative_position_scores = torch.einsum("bhld,lrd->bhlr", query_layer, positional_embedding)
+            #     attention_scores = attention_scores + relative_position_scores
+            # elif self.position_embedding_type == "relative_key_query":
+            #     relative_position_scores_query = torch.einsum("bhld,lrd->bhlr", query_layer, positional_embedding)
+            #     relative_position_scores_key = torch.einsum("bhrd,lrd->bhlr", key_layer, positional_embedding)
+            #     attention_scores = attention_scores + relative_position_scores_query + relative_position_scores_key
+            ########################################
 
     attention_scores = attention_scores / math.sqrt(self.attention_head_size)
     if attention_mask is not None:

@@ -328,19 +328,17 @@ def build_streaming_imagenet1k_dataloader(
         raise MissingConditionalImportError(extra_deps_group='streaming', conda_package='mosaicml-streaming') from e
 
     transform = []
+    # include fixed-size resize before RandomResizedCrop in training only
+    # if requested (by specifying a size > 0)
+    if resize_size > 0:
+        transform.append(transforms.Resize(resize_size))
     if split == 'train':
-        # include fixed-size resize before RandomResizedCrop in training only
-        # if requested (by specifying a size > 0)
-        if resize_size > 0:
-            transform.append(transforms.Resize(resize_size))
         # always include RandomResizedCrop and RandomHorizontalFlip
         transform += [
             transforms.RandomResizedCrop(crop_size, scale=(0.08, 1.0), ratio=(0.75, 4.0 / 3.0)),
             transforms.RandomHorizontalFlip()
         ]
     else:
-        if resize_size > 0:
-            transform.append(transforms.Resize(resize_size))
         transform.append(transforms.CenterCrop(crop_size))
     transform.append(lambda image: image.convert('RGB'))
     transform = transforms.Compose(transform)

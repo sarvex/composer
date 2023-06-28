@@ -260,14 +260,19 @@ class Engine():
             raise RuntimeError(('The engine was already closed and therefore cannot be used again. '
                                 'To fix, please create a new Engine (or Trainer)'))
 
-        if self.state.profiler is not None:
-            name = f'event/{event.canonical_name}'
-            if (event.is_before_event or event.is_after_event):
+        if (event.is_before_event or event.is_after_event):
+            if self.state.profiler is not None:
                 # if not part of an event pair (e.g. init), then don't record an event here
-                if event in _ALWAYS_RECORD_EVENTS:
-                    actions = [ProfilerAction.ACTIVE, ProfilerAction.WARMUP, ProfilerAction.SKIP]
-                else:
-                    actions = [ProfilerAction.ACTIVE, ProfilerAction.WARMUP]
+                actions = (
+                    [
+                        ProfilerAction.ACTIVE,
+                        ProfilerAction.WARMUP,
+                        ProfilerAction.SKIP,
+                    ]
+                    if event in _ALWAYS_RECORD_EVENTS
+                    else [ProfilerAction.ACTIVE, ProfilerAction.WARMUP]
+                )
+                name = f'event/{event.canonical_name}'
                 duration_marker = self.state.profiler.marker(name, actions=actions)
 
         if event.is_after_event and duration_marker is not None:
@@ -319,14 +324,19 @@ class Engine():
             raise RuntimeError(('The engine was already closed and therefore cannot be used again. '
                                 'To fix, please create a new Engine (or Trainer)'))
 
-        if self.state.profiler is not None:
-            name = f'event/{event.canonical_name}'
-            if (event.is_before_event or event.is_after_event):
+        if (event.is_before_event or event.is_after_event):
+            if self.state.profiler is not None:
                 # if not part of an event pair (e.g. init), then don't record an event here
-                if event in _ALWAYS_RECORD_EVENTS:
-                    actions = [ProfilerAction.ACTIVE, ProfilerAction.WARMUP, ProfilerAction.SKIP]
-                else:
-                    actions = [ProfilerAction.ACTIVE, ProfilerAction.WARMUP]
+                actions = (
+                    [
+                        ProfilerAction.ACTIVE,
+                        ProfilerAction.WARMUP,
+                        ProfilerAction.SKIP,
+                    ]
+                    if event in _ALWAYS_RECORD_EVENTS
+                    else [ProfilerAction.ACTIVE, ProfilerAction.WARMUP]
+                )
+                name = f'event/{event.canonical_name}'
                 duration_marker = self.state.profiler.marker(name, actions=actions)
 
         if event.is_after_event and duration_marker is not None:
@@ -350,13 +360,11 @@ class Engine():
 
     @staticmethod
     def _assert_dataloader_and_duration_set(state: State, event: Event):
-        # correctness checks that dataloader and max duration need to be set for certain events
-
-        if event != Event.INIT and event != Event.AFTER_LOAD:  # dataloader should be set on all events expect INIT/AFTER_LOAD
+        if event not in [Event.INIT, Event.AFTER_LOAD]:
             assert state.dataloader is not None, f'The trainer should have set state.dataloader for event {event}.'
 
-        if event != Event.INIT and event != Event.AFTER_LOAD and not event.is_predict and not event.is_eval:
-            assert state.max_duration is not None, f'The trainer should have set state.max_duration for event {event}.'
+            if not event.is_predict and not event.is_eval:
+                assert state.max_duration is not None, f'The trainer should have set state.max_duration for event {event}.'
 
     def _run_algorithms(
         self,

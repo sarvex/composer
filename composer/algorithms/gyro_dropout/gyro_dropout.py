@@ -35,29 +35,28 @@ class GyroDropoutLayer(torch.nn.Module):
         self.iter_num = 0
 
     def forward(self, x):
-        if self.training:
-            if self.training_step == 0:
-                is_cuda_tensor = x.is_cuda
-
-                if is_cuda_tensor:
-                    self.preselect_masks = (torch.rand(self.sigma, x.shape[1]) > self.p).float().to('cuda')
-                else:
-                    self.preselect_masks = (torch.rand(self.sigma, x.shape[1]) > self.p).float()
-
-                # Below simplified from: (iters_per_epoch*max_epoch*batch_size/sigma) / (batch_size/self.tau)
-                self.iter_num = int(self.iters_per_epoch * self.max_epoch / self.sigma) * self.tau
-
-            if self.training_step % self.iter_num == 0:
-                pick_idx = np.random.choice(self.sigma, self.tau)
-                self.selected_masks = self.preselect_masks[pick_idx]
-
-            self.dropout_mask = torch.repeat_interleave(self.selected_masks, x.shape[0] // self.tau, dim=0)
-
-            self.training_step += 1
-
-            return x * self.dropout_mask * (1 / (1 - self.p))
-        else:
+        if not self.training:
             return x
+        if self.training_step == 0:
+            is_cuda_tensor = x.is_cuda
+
+            if is_cuda_tensor:
+                self.preselect_masks = (torch.rand(self.sigma, x.shape[1]) > self.p).float().to('cuda')
+            else:
+                self.preselect_masks = (torch.rand(self.sigma, x.shape[1]) > self.p).float()
+
+            # Below simplified from: (iters_per_epoch*max_epoch*batch_size/sigma) / (batch_size/self.tau)
+            self.iter_num = int(self.iters_per_epoch * self.max_epoch / self.sigma) * self.tau
+
+        if self.training_step % self.iter_num == 0:
+            pick_idx = np.random.choice(self.sigma, self.tau)
+            self.selected_masks = self.preselect_masks[pick_idx]
+
+        self.dropout_mask = torch.repeat_interleave(self.selected_masks, x.shape[0] // self.tau, dim=0)
+
+        self.training_step += 1
+
+        return x * self.dropout_mask * (1 / (1 - self.p))
 
 
 def from_Dropout(iters_per_epoch: int, epoch: int, p: float, sigma: int, tau: int, layer: torch.nn.Module,

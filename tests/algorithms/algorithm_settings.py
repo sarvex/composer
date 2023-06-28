@@ -209,10 +209,7 @@ def get_alg_kwargs(alg_cls: Type[Algorithm]) -> Dict[str, Any]:
 def get_alg_model(alg_cls: Type[Algorithm]) -> ComposerModel:
     """Return an instance of the model for an algorithm."""
     settings = _get_alg_settings(alg_cls)['model']
-    if isinstance(settings, tuple):
-        (cls, kwargs) = settings
-    else:
-        (cls, kwargs) = (settings, {})
+    (cls, kwargs) = settings if isinstance(settings, tuple) else (settings, {})
     return cls(**kwargs)
 
 
@@ -264,13 +261,16 @@ def get_algs_with_marks():
             marks.append(pytest.mark.skipif(not transformers_available, reason='transformers not available'))
 
         if alg_cls == SWA:
-            # TODO(matthew): Fix
-            marks.append(
-                pytest.mark.filterwarnings(
-                    r'ignore:Detected call of `lr_scheduler.step\(\)` before `optimizer.step\(\)`:UserWarning'))
-            marks.append(
-                pytest.mark.filterwarnings('ignore:SWA has known issues when resuming from a checkpoint.*:UserWarning'))
-
+            marks.extend(
+                (
+                    pytest.mark.filterwarnings(
+                        r'ignore:Detected call of `lr_scheduler.step\(\)` before `optimizer.step\(\)`:UserWarning'
+                    ),
+                    pytest.mark.filterwarnings(
+                        'ignore:SWA has known issues when resuming from a checkpoint.*:UserWarning'
+                    ),
+                )
+            )
         if alg_cls == GyroDropout:
             marks.append(
                 pytest.mark.filterwarnings(

@@ -110,9 +110,8 @@ class EarlyStopper(Callback):
         if self.dataloader_label == 'train':
             if self.monitor in state.train_metrics:
                 return state.train_metrics[self.monitor].compute()
-        else:
-            if self.monitor in state.eval_metrics[self.dataloader_label]:
-                return state.eval_metrics[self.dataloader_label][self.monitor].compute()
+        elif self.monitor in state.eval_metrics[self.dataloader_label]:
+            return state.eval_metrics[self.dataloader_label][self.monitor].compute()
         raise ValueError(f"Couldn't find the metric {self.monitor} with the dataloader label {self.dataloader_label}."
                          "Check that the dataloader_label is set to 'eval', 'train' or the evaluator name.")
 
@@ -137,7 +136,7 @@ class EarlyStopper(Callback):
             if state.timestamp.batch - self.best_occurred.batch > self.patience:
                 state.stop_training()
         else:
-            raise ValueError(f'The units of `patience` should be EPOCH or BATCH.')
+            raise ValueError('The units of `patience` should be EPOCH or BATCH.')
 
     def eval_end(self, state: State, logger: Logger) -> None:
         if self.dataloader_label == state.dataloader_label:

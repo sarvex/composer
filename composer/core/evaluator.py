@@ -40,7 +40,7 @@ def evaluate_periodically(eval_interval: Union[str, Time, int], eval_at_fit_end:
 
     def should_eval(state: State, event: Event):
         # `TimeUnit.Duration` value is a float from `[0.0, 1.0)`
-        if not eval_interval.unit == TimeUnit.DURATION and int(eval_interval) <= 0:
+        if eval_interval.unit != TimeUnit.DURATION and int(eval_interval) <= 0:
             return False
         nonlocal last_batch_seen  # required to use the last_batch_seen from the outer function scope
 
@@ -238,13 +238,12 @@ def validate_eval_automicrobatching(auto_microbatching: bool, device: Device):
 
 
 def _is_auto_microbatching(device_eval_microbatch_size: Optional[Union[int, str]]):
-    if device_eval_microbatch_size == 'auto':
-        warnings.warn(("Setting `device_eval_microbatch_size='auto'` is an experimental feature which may cause "
-                       'uncaught Cuda Out of Memory errors. In this case, please manually '
-                       'set device_eval_microbatch_size explicitly to an integer instead.'))
-        return True
-    else:
+    if device_eval_microbatch_size != 'auto':
         return False
+    warnings.warn(("Setting `device_eval_microbatch_size='auto'` is an experimental feature which may cause "
+                   'uncaught Cuda Out of Memory errors. In this case, please manually '
+                   'set device_eval_microbatch_size explicitly to an integer instead.'))
+    return True
 
 
 def _get_initial_device_eval_microbatch_size(device_eval_microbatch_size: Optional[Union[int, str]],

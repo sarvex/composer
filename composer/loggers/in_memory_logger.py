@@ -143,9 +143,6 @@ class InMemoryLogger(LoggerDestination):
                 timeseries.setdefault(field, []).append(time_value)
         # Convert to numpy arrays
         for k, v in timeseries.items():
-            if isinstance(v[0], Tensor):
-                v = Tensor(v).numpy()
-            else:
-                v = np.array(v)
+            v = Tensor(v).numpy() if isinstance(v[0], Tensor) else np.array(v)
             timeseries[k] = v
         return timeseries

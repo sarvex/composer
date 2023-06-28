@@ -59,12 +59,15 @@ def apply_gradient_clipping(model: Union[ComposerModel, torch.nn.Module], clippi
                     else:
                         raise ValueError(f"clipping type must be 'norm' or 'value' with FSDP not {clipping_type}")
                 except (AssertionError, RuntimeError) as e:
-                    if (('clip_grad_norm should only be called on the root (parent) instance' == str(e) and
-                         not is_torch_2_0) or
-                        ('`clip_grad_norm_()` should only be called on the root FSDP instance' == str(e) and
-                         is_torch_2_0)):
-                        continue
-                    else:
+                    if (
+                        str(e)
+                        != 'clip_grad_norm should only be called on the root (parent) instance'
+                        or is_torch_2_0
+                    ) and (
+                        str(e)
+                        != '`clip_grad_norm_()` should only be called on the root FSDP instance'
+                        or not is_torch_2_0
+                    ):
                         raise
         return
     parameters = model.parameters()
@@ -152,17 +155,16 @@ class GradientClipping(Algorithm):
 
     def apply(self, event: Event, state: State, logger: Logger) -> Optional[int]:
         if event == Event.INIT and state.deepspeed_config is not None:
-            if self.clipping_type == 'norm':
-                if self.clipping_threshold > 0:
-                    state.deepspeed_config['gradient_clipping'] = self.clipping_threshold
-                else:
-                    raise ValueError(
-                        f'Deepspeed only supports gradient clipping thresholds that are greater than zero, but the provided one is {self.clipping_threshold}'
-                    )
-            else:
+            if self.clipping_type != 'norm':
                 raise NotImplementedError(
                     f"Deepspeed only supports gradient clipping of type 'norm' not of type '{self.clipping_type}'")
 
+            if self.clipping_threshold > 0:
+                state.deepspeed_config['gradient_clipping'] = self.clipping_threshold
+            else:
+                raise ValueError(
+                    f'Deepspeed only supports gradient clipping thresholds that are greater than zero, but the provided one is {self.clipping_threshold}'
+                )
         if event == Event.AFTER_TRAIN_BATCH and not state.deepspeed_enabled:
             apply_gradient_clipping(model=state.model,
                                     clipping_type=self.clipping_type,
@@ -200,9 +202,7 @@ def _get_clipped_gradient_coeff(weights: torch.Tensor, grad: torch.Tensor, clipp
     # Gradients whose norms are greater than weight_norm * clipping_threhsold are
     # scaled down by (weight_norm * clipping_threhsold) / grad_norm.
     max_norm = w_norm.mul_(clipping_threshold)
-    clipped_grad_coeff = max_norm.div_(grad_norm).nan_to_num_(nan=1.0).clamp_(max=1.0)
-
-    return clipped_grad_coeff
+    return max_norm.div_(grad_norm).nan_to_num_(nan=1.0).clamp_(max=1.0)
 
 
 def _unitwise_norm(tensor: torch.Tensor):

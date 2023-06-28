@@ -55,9 +55,7 @@ def _get_cuda_version(pytorch_version: str, use_cuda: bool):
 
 
 def _get_cuda_version_tag(cuda_version: str):
-    if not cuda_version:
-        return 'cpu'
-    return 'cu' + ''.join(cuda_version.split('.')[:2])
+    return 'cu' + ''.join(cuda_version.split('.')[:2]) if cuda_version else 'cpu'
 
 
 def _get_pytorch_tags(python_version: str, pytorch_version: str, cuda_version: str, stage: str, interconnect: str):
@@ -71,11 +69,11 @@ def _get_pytorch_tags(python_version: str, pytorch_version: str, cuda_version: s
     tags = [f'{base_image_name}:{pytorch_version}_{cuda_version_tag}-python{python_version}-ubuntu20.04']
 
     if python_version == LATEST_PYTHON_VERSION and pytorch_version == PRODUCTION_PYTORCH_VERSION:
-        if not cuda_version:
-            tags.append(f'{base_image_name}:latest_cpu')
-        else:
+        if cuda_version:
             tags.append(f'{base_image_name}:latest')
 
+        else:
+            tags.append(f'{base_image_name}:latest_cpu')
     if interconnect == 'EFA':
         tags = [f'{tag}-aws' for tag in tags]
 
@@ -87,12 +85,19 @@ def _get_composer_tags(composer_version: str, use_cuda: bool):
 
     tags = []
     if not use_cuda:
-        tags.append(f'{base_image_name}:{composer_version}_cpu')
-        tags.append(f'{base_image_name}:latest_cpu')
+        tags.extend(
+            (
+                f'{base_image_name}:{composer_version}_cpu',
+                f'{base_image_name}:latest_cpu',
+            )
+        )
     else:
-        tags.append(f'{base_image_name}:{composer_version}')
-        tags.append(f'{base_image_name}:latest')
-
+        tags.extend(
+            (
+                f'{base_image_name}:{composer_version}',
+                f'{base_image_name}:latest',
+            )
+        )
     return tags
 
 
@@ -107,11 +112,7 @@ def _get_image_name(pytorch_version: str, cuda_version: str, stage: str, interco
     else:
         raise ValueError(f'Invalid stage: {stage}')
 
-    if interconnect == 'EFA':
-        fabric = '-aws'
-    else:
-        fabric = ''
-
+    fabric = '-aws' if interconnect == 'EFA' else ''
     return f'torch{stage}-{pytorch_version}-{cuda_version}{fabric}'
 
 
@@ -176,8 +177,11 @@ def _main():
             continue
 
         # Only build EFA image on latest python with cuda on pytorch_stage
-        if interconnect == 'EFA' and not (python_version == LATEST_PYTHON_VERSION and use_cuda and
-                                          stage == 'pytorch_stage'):
+        if interconnect == 'EFA' and (
+            python_version != LATEST_PYTHON_VERSION
+            or not use_cuda
+            or stage != 'pytorch_stage'
+        ):
             continue
 
         # Skip the mellanox drivers if not in the cuda images or using EFA
@@ -187,11 +191,7 @@ def _main():
             entry['MOFED_VERSION'] = '5.5-1.0.3.2'
 
         # Skip EFA drivers if not using EFA
-        if interconnect != 'EFA':
-            entry['AWS_OFI_NCCL_VERSION'] = ''
-        else:
-            entry['AWS_OFI_NCCL_VERSION'] = 'v1.5.0-aws'
-
+        entry['AWS_OFI_NCCL_VERSION'] = '' if interconnect != 'EFA' else 'v1.5.0-aws'
         pytorch_entries.append(entry)
 
     composer_entries = []
@@ -239,19 +239,18 @@ def _main():
     for entry in pytorch_entries:
         interconnect = 'N/A'
         if entry['CUDA_VERSION']:
-            if entry['MOFED_VERSION'] != '':
-                interconnect = 'Infiniband'
-            else:
-                interconnect = 'EFA'
+            interconnect = 'Infiniband' if entry['MOFED_VERSION'] != '' else 'EFA'
         cuda_version = f"{entry['CUDA_VERSION']} ({interconnect})" if entry['CUDA_VERSION'] else 'cpu'
-        table.append([
-            'Ubuntu 20.04',  # Linux distro
-            'Base' if entry['TARGET'] == 'pytorch_stage' else 'Vision',  # Flavor
-            entry['PYTORCH_VERSION'],  # Pytorch version
-            cuda_version,  # Cuda version
-            entry['PYTHON_VERSION'],  # Python version,
-            ', '.join(reversed(list(f'`{x}`' for x in entry['TAGS']))),  # Docker tags
-        ])
+        table.append(
+            [
+                'Ubuntu 20.04',
+                'Base' if entry['TARGET'] == 'pytorch_stage' else 'Vision',
+                entry['PYTORCH_VERSION'],
+                cuda_version,
+                entry['PYTHON_VERSION'],
+                ', '.join(reversed([f'`{x}`' for x in entry['TAGS']])),
+            ]
+        )
     table.sort(
         key=lambda x: x[3].replace('Infiniband', '1').replace('EFA', '2'))  # cuda version, put infiniband ahead of EFA
     table.sort(key=lambda x: packaging.version.parse(x[4]), reverse=True)  # python version
@@ -263,17 +262,15 @@ def _main():
     # Composer Table
     # Also print the table for the readme
     headers = ['Composer Version', 'CUDA Support', 'Docker Tag']
-    table = []
-    for entry in composer_entries:
-
-        if len(entry['TAGS']) == 0:
-            continue
-
-        table.append([
-            entry['TAGS'][0].split(':')[1].replace('_cpu', ''),  # Composer version, or 'latest'
-            'No' if entry['BASE_IMAGE'].startswith('ubuntu:') else 'Yes',  # Whether there is Cuda support
-            ', '.join(reversed(list(f'`{x}`' for x in entry['TAGS']))),  # Docker tags
-        ])
+    table = [
+        [
+            entry['TAGS'][0].split(':')[1].replace('_cpu', ''),
+            'No' if entry['BASE_IMAGE'].startswith('ubuntu:') else 'Yes',
+            ', '.join(reversed([f'`{x}`' for x in entry['TAGS']])),
+        ]
+        for entry in composer_entries
+        if len(entry['TAGS']) != 0
+    ]
     table.sort(key=lambda x: x[1], reverse=True)  # cuda support
     table.sort(key=lambda x: packaging.version.parse('9999999999999'
                                                      if x[0] == 'latest' else x[0]), reverse=True)  # Composer version

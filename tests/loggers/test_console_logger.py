@@ -61,7 +61,12 @@ def test_console_logger_interval(console_logger_test_stream, console_logger_test
     # a colon.
     reg_exp = re.compile('Train *:*')
     actual_num_log_lines = sum(
-        [1 if bool(reg_exp.search(line)) and ('trainer/' not in line and 'time/' not in line) else 0 for line in lines])
+        1
+        if bool(reg_exp.search(line))
+        and ('trainer/' not in line and 'time/' not in line)
+        else 0
+        for line in lines
+    )
 
     assert model.train_metrics is not None
     num_metrics = len(list(model.train_metrics.keys())) if isinstance(model.train_metrics, MetricCollection) else 1
@@ -140,7 +145,9 @@ def test_console_logger_fit(
     # Make a regular expression for matches for any line that contains "Eval" followed by
     # a colon.
     eval_reg_exp = re.compile('Eval *:*')
-    actual_num_eval_log_lines = sum([1 if bool(eval_reg_exp.search(line)) else 0 for line in lines])
+    actual_num_eval_log_lines = sum(
+        1 if bool(eval_reg_exp.search(line)) else 0 for line in lines
+    )
 
     assert model.val_metrics is not None
     num_eval_metrics_per_event = len(list(model.val_metrics.keys())) if isinstance(model.val_metrics,
@@ -211,7 +218,9 @@ def test_console_logger_eval(
     # Make a regular expression for matches for any line that contains "Eval" followed by
     # a colon.
     eval_reg_exp = re.compile('Eval *:*')
-    actual_num_eval_log_lines = sum([1 if bool(eval_reg_exp.search(line)) else 0 for line in lines])
+    actual_num_eval_log_lines = sum(
+        1 if bool(eval_reg_exp.search(line)) else 0 for line in lines
+    )
 
     assert model.val_metrics is not None
     num_eval_metrics_per_event = len(list(model.val_metrics.keys())) if isinstance(model.val_metrics,
@@ -296,7 +305,9 @@ def test_console_logger_with_a_callback(console_logger_test_stream, console_logg
 
     # Make a regular expression for SpeedMonitor logging events.
     speed_monitor_reg_exp = re.compile('Train time/(train|val|total)+')
-    actual_num_speed_monitor_lines = sum([1 if bool(speed_monitor_reg_exp.search(line)) else 0 for line in lines])
+    actual_num_speed_monitor_lines = sum(
+        1 if bool(speed_monitor_reg_exp.search(line)) else 0 for line in lines
+    )
 
     num_speed_monitor_lines_per_log_event = 3
     expected_speed_monitor_lines = num_speed_monitor_lines_per_log_event * expected_num_logging_events
@@ -343,7 +354,12 @@ def test_console_logger_overlapping(console_logger_test_stream, console_logger_t
     # a colon.
     reg_exp = re.compile('Train *:*')
     actual_num_log_lines = sum(
-        [1 if bool(reg_exp.search(line)) and ('trainer/' not in line and 'time/' not in line) else 0 for line in lines])
+        1
+        if bool(reg_exp.search(line))
+        and ('trainer/' not in line and 'time/' not in line)
+        else 0
+        for line in lines
+    )
 
     assert model.train_metrics is not None
     num_metrics = len(list(model.train_metrics.keys())) if isinstance(model.train_metrics, MetricCollection) else 1

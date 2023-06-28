@@ -70,5 +70,4 @@ def mnist_model(num_classes: int = 10, initializers: Optional[List[Initializer]]
         initializers = []
 
     model = Model(initializers, num_classes)
-    composer_model = ComposerClassifier(module=model)
-    return composer_model
+    return ComposerClassifier(module=model)

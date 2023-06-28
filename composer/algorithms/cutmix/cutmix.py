@@ -106,11 +106,7 @@ def cutmix_batch(input: Tensor,
 
     # Create shuffled indicies across the batch in preparation for cutting and mixing.
     # Use given indices if there are any.
-    if indices is None:
-        shuffled_idx = _gen_indices(input)
-    else:
-        shuffled_idx = indices
-
+    shuffled_idx = _gen_indices(input) if indices is None else indices
     H, W = input.shape[-2], input.shape[-1]
 
     # figure out fraction of area to cut
@@ -316,14 +312,7 @@ def _gen_cutmix_coef(alpha: float) -> float:
     """
     # First check if alpha is positive.
     assert alpha >= 0
-    # Draw the area parameter from a beta distribution.
-    # Check here is needed because beta distribution requires alpha > 0
-    # but alpha = 0 is fine for cutmix.
-    if alpha == 0:
-        cutmix_lambda = 0
-    else:
-        cutmix_lambda = np.random.beta(alpha, alpha)
-    return cutmix_lambda
+    return 0 if alpha == 0 else np.random.beta(alpha, alpha)
 
 
 def _rand_bbox(W: int,
@@ -357,14 +346,13 @@ def _rand_bbox(W: int,
     cut_w = int(W * cut_ratio)
     cut_h = int(H * cut_ratio)
 
-    # uniform
     if cx is None:
-        if uniform_sampling is True:
+        if uniform_sampling:
             cx = np.random.randint(-cut_w // 2, high=W + cut_w // 2)
         else:
             cx = np.random.randint(W)
     if cy is None:
-        if uniform_sampling is True:
+        if uniform_sampling:
             cy = np.random.randint(-cut_h // 2, high=H + cut_h // 2)
         else:
             cy = np.random.randint(H)
@@ -390,5 +378,4 @@ def _adjust_lambda(x: Tensor, bbox: Tuple) -> float:
             being potentially out of bounds of the input.
     """
     rx, ry, rw, rh = bbox[0], bbox[1], bbox[2], bbox[3]
-    adjusted_lambda = 1 - ((rw - rx) * (rh - ry) / (x.size()[-1] * x.size()[-2]))
-    return adjusted_lambda
+    return 1 - ((rw - rx) * (rh - ry) / (x.size()[-1] * x.size()[-2]))

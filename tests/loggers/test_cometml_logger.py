@@ -32,8 +32,7 @@ def comet_logger(monkeypatch, comet_offline_directory):
     # Set offline directory.
     os.environ['COMET_OFFLINE_DIRECTORY'] = comet_offline_directory
 
-    comet_logger = CometMLLogger()
-    return comet_logger
+    return CometMLLogger()
 
 
 def test_comet_ml_log_image_saves_images(comet_logger: CometMLLogger, comet_offline_directory: str):
@@ -119,11 +118,11 @@ def test_comet_ml_log_image_saves_images_with_masks(comet_logger: CometMLLogger,
     ]
 
     expected_num_masks_and_images_total = 0
+    num_additional_images_per_mask = 2  # Mask overlaid on image + mask by itself.
     for (images, masks, channels_last) in image_variants:
         # Count expected images and generate numpy arrays from torch tensors.
         num_masks = len(masks.keys())
         num_images = images.shape[0] if images.ndim == 4 else 1
-        num_additional_images_per_mask = 2  # Mask overlaid on image + mask by itself.
         expected_num_masks = num_images * num_additional_images_per_mask * num_masks
         expected_num_masks_and_images = num_images + expected_num_masks
         expected_num_masks_and_images_total += expected_num_masks_and_images
@@ -184,7 +183,7 @@ def test_comet_ml_logging_train_loop(monkeypatch, tmp_path):
     msg_type_to_msgs = defaultdict(list)
 
     with open(comet_logs_path) as f:
-        for line in f.readlines():
+        for line in f:
             parsed_line = jd.decode(line)
             msg_type_to_msgs[parsed_line['type']].append(parsed_line['payload'])
 
@@ -199,10 +198,11 @@ def test_comet_ml_logging_train_loop(monkeypatch, tmp_path):
     ]) == 3
 
     # Check that basic params appear in the comet logs
-    assert len([
-        param_msg for param_msg in msg_type_to_msgs['parameter_msg']
+    assert [
+        param_msg
+        for param_msg in msg_type_to_msgs['parameter_msg']
         if param_msg['param']['paramName'] == 'rank_zero_seed'
-    ]) > 0
+    ]
 
 
 def test_comet_ml_log_metrics_and_hyperparameters(monkeypatch, tmp_path):
@@ -249,7 +249,7 @@ def test_comet_ml_log_metrics_and_hyperparameters(monkeypatch, tmp_path):
     metric_msgs = []
     param_msgs = []
     with open(comet_logs_path) as f:
-        for line in f.readlines():
+        for line in f:
             comet_msg = jd.decode(line)
             if comet_msg['type'] == 'ws_msg' and comet_msg['payload'].get('log_other', {}) == expected_created_from_log:
                 created_from_found = True
@@ -267,7 +267,7 @@ def test_comet_ml_log_metrics_and_hyperparameters(monkeypatch, tmp_path):
     # those written to offline dump.
     assert [msg['metricValue'] for msg in metric_msgs] == metric_values
     assert [msg['step'] for msg in metric_msgs] == steps
-    assert all([msg['metricName'] == metric_name for msg in metric_msgs])
+    assert all(msg['metricName'] == metric_name for msg in metric_msgs)
 
     # Assert dummy params input to log_hyperparameters are the same as
     # those written to offline dump

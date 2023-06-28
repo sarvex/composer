@@ -84,16 +84,16 @@ def test_release_tests_reflect_readme(example: int):
         if found_begin and not started:
             if line == '```python\n':
                 started = True
-        # Reached end of code snippet
         elif started and line == '```\n':
             # Code snippet continues
-            if i + 2 < len(readme_lines) and '-->\n' == readme_lines[
-                    i + 1] and '<!--pytest-codeblocks:cont-->\n' == readme_lines[i + 2]:
+            if (
+                i + 2 < len(readme_lines)
+                and readme_lines[i + 1] == '-->\n'
+                and readme_lines[i + 2] == '<!--pytest-codeblocks:cont-->\n'
+            ):
                 started = False
-            # Code snippet ends
             else:
                 break
-        # Add line
         elif started:
             example_code_lines.append(line)
 

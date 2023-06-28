@@ -84,7 +84,7 @@ def test_idempotent(algo_name: str, tiny_bert_config):
         original_model = None
         if algo_name == 'StochasticDepth':
             original_model = composer_resnet(model_name='resnet50')
-        elif algo_name in ['Alibi', 'GatedLinearUnits']:
+        elif algo_name in {'Alibi', 'GatedLinearUnits'}:
             transformers = pytest.importorskip('transformers')
             from composer.models import HuggingFaceModel
             hf_model = transformers.AutoModelForSequenceClassification.from_config(tiny_bert_config)
@@ -120,7 +120,7 @@ def test_autoload(algo_name: str, load_weights_only: bool, already_added: bool, 
         original_model = None
         if algo_name == 'StochasticDepth':
             original_model = composer_resnet(model_name='resnet50')
-        elif algo_name in ['Alibi', 'GatedLinearUnits']:
+        elif algo_name in {'Alibi', 'GatedLinearUnits'}:
             transformers = pytest.importorskip('transformers')
             from composer.models import HuggingFaceModel
             hf_model = transformers.AutoModelForSequenceClassification.from_config(tiny_bert_config)
@@ -139,9 +139,8 @@ def test_autoload(algo_name: str, load_weights_only: bool, already_added: bool, 
         # Emit warning when autoloading
         if not already_added and not exclude:
             context = pytest.warns(UserWarning, match='Automatically adding required_on_load algorithm*')
-        # Excluding some algorithms leads to errors when loading
         elif exclude:
-            if algo_name in ['Factorize', 'SqueezeExcite']:
+            if algo_name in {'Factorize', 'SqueezeExcite'}:
                 context = pytest.raises(
                     ValueError,
                     match=

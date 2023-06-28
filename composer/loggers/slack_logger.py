@@ -147,7 +147,7 @@ class SlackLogger(LoggerDestination):
             List[Dict[str, str]]: List of blocks to be sent to Slack.
         """
         blocks = [{'type': 'section', 'text': {'type': 'mrkdwn', 'text': f'*{k}:* {v}'}} for k, v in data.items()]
-        if len(blocks) > 0 and 'header' in kwargs:
+        if blocks and 'header' in kwargs:
             header = kwargs['header']
             blocks.append({'type': 'header', 'text': {'type': 'plain_text', 'text': f'{header}'}})
 

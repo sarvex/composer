@@ -41,7 +41,9 @@ def test_factorize_surgery(minimal_state: State, model_cls, model_params, empty_
     model = model_cls(*model_params)
     state = create_state(minimal_state, model)
 
-    if (isinstance(model, SimpleTransformerClassifier) or isinstance(model, HuggingFaceModel)) and replace_convs:
+    if (
+        isinstance(model, (SimpleTransformerClassifier, HuggingFaceModel))
+    ) and replace_convs:
         pytest.skip('Skipping: NLP models do not contain conv layers.')
 
     algo_instance = create_algo_instance(replace_convs, replace_linears)
@@ -78,7 +80,9 @@ def test_forward_shape(minimal_state: State, model_cls, model_params, empty_logg
                        replace_linears):
     model = model_cls(*model_params)
 
-    if (isinstance(model, SimpleTransformerClassifier) or isinstance(model, HuggingFaceModel)) and replace_convs:
+    if (
+        isinstance(model, (SimpleTransformerClassifier, HuggingFaceModel))
+    ) and replace_convs:
         pytest.skip('Skipping: NLP models do not contain conv layers.')
 
     if isinstance(model, SimpleTransformerClassifier):
@@ -107,7 +111,9 @@ def test_algorithm_logging(minimal_state: State, model_cls, model_params, replac
     model = model_cls(*model_params)
     state = create_state(minimal_state, model)
 
-    if (isinstance(model, SimpleTransformerClassifier) or isinstance(model, HuggingFaceModel)) and replace_convs:
+    if (
+        isinstance(model, (SimpleTransformerClassifier, HuggingFaceModel))
+    ) and replace_convs:
         pytest.skip('Skipping: NLP models do not contain conv layers.')
 
     algo_instance = create_algo_instance(replace_convs, replace_linears)
@@ -128,7 +134,6 @@ def test_algorithm_logging(minimal_state: State, model_cls, model_params, replac
         num_factorized_linears = module_surgery.count_module_instances(state.model, FactorizedLinear)
         mock_obj.assert_any_call({LOG_NUM_LINEAR_REPLACEMENTS_KEY: num_factorized_linears})
 
-    target_count = 0
-    target_count += 1 if factorize_convs else 0
+    target_count = 0 + (1 if factorize_convs else 0)
     target_count += 1 if factorize_linears else 0
     assert mock_obj.call_count == target_count

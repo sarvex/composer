@@ -47,8 +47,7 @@ def comet_logger(monkeypatch, comet_offline_directory):
     # Set offline directory.
     os.environ['COMET_OFFLINE_DIRECTORY'] = comet_offline_directory
 
-    comet_logger = CometMLLogger()
-    return comet_logger
+    return CometMLLogger()
 
 
 @pytest.mark.parametrize('interval', ['9ba', '2ep', '7ep'])
@@ -59,7 +58,7 @@ def test_image_visualizer_with_wandb(test_wandb_logger, interval):
 
     dataset_size = 40
     batch_size = 4
-    images_per_table = batch_size if batch_size < image_visualizer.num_images else image_visualizer.num_images
+    images_per_table = min(batch_size, image_visualizer.num_images)
     max_duration = 9
 
     trainer = Trainer(model=SimpleConvModel(),
@@ -84,7 +83,7 @@ def test_image_visualizer_with_wandb(test_wandb_logger, interval):
     train_image_count, eval_image_count = 0, 0
     for image_table_file in image_table_files:
         table_columns = json.load(open(image_table_file.absolute()))['data']
-        num_images = sum([1 for column in table_columns if column[0] == 'Image'])
+        num_images = sum(1 for column in table_columns if column[0] == 'Image')
         if str(image_table_file.name).startswith('Train'):
             train_image_count += num_images
         elif str(image_table_file.name).startswith('Eval'):
@@ -185,7 +184,7 @@ def test_image_visualizer_segmentation_with_wandb(test_wandb_logger):
     train_image_count, eval_image_count = 0, 0
     for image_table_file in image_table_files:
         table_columns = json.load(open(image_table_file.absolute()))['data']
-        num_images = sum([1 for column in table_columns if column[0] == 'Image'])
+        num_images = sum(1 for column in table_columns if column[0] == 'Image')
         if str(image_table_file.name).startswith('Train'):
             train_image_count += num_images
         elif str(image_table_file.name).startswith('Eval'):

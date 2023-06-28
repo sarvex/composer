@@ -115,10 +115,10 @@ def select_using_loss(input: torch.Tensor,
         ...         scale_factor=1
         ...     )
     """
-    INTERPOLATE_MODES = {3: 'linear', 4: 'bilinear', 5: 'trilinear'}
-
     interp_mode = 'bilinear'
     if scale_factor != 1:
+        INTERPOLATE_MODES = {3: 'linear', 4: 'bilinear', 5: 'trilinear'}
+
         if input.dim() not in INTERPOLATE_MODES:
             raise ValueError(f'Input must be 3D, 4D, or 5D if scale_factor != 1, got {input.dim()}')
         interp_mode = INTERPOLATE_MODES[input.dim()]
@@ -126,13 +126,12 @@ def select_using_loss(input: torch.Tensor,
     if scale_factor > 1:
         raise ValueError('scale_factor must be <= 1')
 
-    if callable(loss_fun):
-        sig = inspect.signature(loss_fun)
-        if not 'reduction' in sig.parameters:
-            raise TypeError('Loss function `loss_fun` must take a keyword argument `reduction`.')
-    else:
+    if not callable(loss_fun):
         raise TypeError('Loss function must be callable')
 
+    sig = inspect.signature(loss_fun)
+    if 'reduction' not in sig.parameters:
+        raise TypeError('Loss function `loss_fun` must take a keyword argument `reduction`.')
     with torch.no_grad():
         N = input.shape[0]
 
@@ -252,14 +251,13 @@ class SelectiveBackprop(Algorithm):
         elapsed_duration = state.get_elapsed_duration()
         assert elapsed_duration is not None, 'elapsed duration should be set on Event.AFTER_DATALOADER'
 
-        is_chosen = should_selective_backprop(
+        return should_selective_backprop(
             current_duration=float(elapsed_duration),
             batch_idx=int(state.timestamp.batch_in_epoch),
             start=self.start,
             end=self.end,
             interrupt=self.interrupt,
         )
-        return is_chosen
 
     def apply(self, event: Event, state: State, logger: Optional[Logger] = None) -> None:
         if event == Event.INIT:

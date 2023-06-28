@@ -544,10 +544,7 @@ class ADE20k(Dataset):
         if self.image_transforms:
             image = self.image_transforms(image)
 
-        if self.split in ['training', 'validation']:
-            return image, target  # type: ignore
-        else:
-            return image
+        return (image, target) if self.split in ['training', 'validation'] else image
 
     def __len__(self):
         return len(self.image_files)

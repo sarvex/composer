@@ -63,5 +63,4 @@ def composer_timm(model_name: str,
         bn_momentum=bn_momentum,
         bn_eps=bn_eps)
 
-    composer_model = ComposerClassifier(module=model)
-    return composer_model
+    return ComposerClassifier(module=model)

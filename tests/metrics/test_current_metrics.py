@@ -87,20 +87,11 @@ def test_current_metrics(eval_interval: str,):
     # Validate the metrics
     assert trainer.state.train_metrics['MulticlassAccuracy'].compute() != 0.0
 
-    if compute_val_metrics:
-        assert trainer.state.eval_metrics['eval']['MulticlassAccuracy'].compute() != 0.0
-    else:
-        assert 'eval' not in trainer.state.eval_metrics
-
+    assert trainer.state.eval_metrics['eval']['MulticlassAccuracy'].compute() != 0.0
     num_step_and_index_calls = 2  # global_step and batch_idx calls
     num_loss_calls_per_epoch = 1
 
-    # Validate that the logger was called the correct number of times for metric calls
-    num_expected_calls = 0
-
-    # Every epoch is logged.
-    num_expected_calls += num_epochs
-
+    num_expected_calls = 0 + num_epochs
     num_expected_calls += num_epochs * train_subset_num_batches * num_step_and_index_calls
     num_expected_calls += 1  # timestamp call at end of fit
 
@@ -108,14 +99,12 @@ def test_current_metrics(eval_interval: str,):
 
     # Computed once per batch and again at epoch end
     num_expected_calls += (train_subset_num_batches + 1) * num_epochs
-    # Computed at eval end
-    if compute_val_metrics:
-        num_evals = 0
-        if eval_interval == '1ba':
-            num_evals += train_subset_num_batches * num_epochs
-        if eval_interval == '1ep':
-            num_evals += num_epochs
-        num_expected_calls += num_evals
+    num_evals = 0
+    if eval_interval == '1ba':
+        num_evals += train_subset_num_batches * num_epochs
+    elif eval_interval == '1ep':
+        num_evals += num_epochs
+    num_expected_calls += num_evals
 
     num_actual_calls = len(mock_logger_destination.log_metrics.mock_calls)
 

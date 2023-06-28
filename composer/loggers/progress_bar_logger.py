@@ -64,12 +64,11 @@ class _ProgressBar:
         )
 
     def log_data(self, data: Dict[str, Any]):
-        formatted_data = {}
-        for (k, v) in data.items():
-            # Check if any substring of the key matches the keys to log
-            if any(key_to_log in k for key_to_log in self.keys_to_log):
-                formatted_data[k] = format_log_data_value(v)
-
+        formatted_data = {
+            k: format_log_data_value(v)
+            for k, v in data.items()
+            if any(key_to_log in k for key_to_log in self.keys_to_log)
+        }
         self.metrics.update(formatted_data)
         self.pbar.set_postfix(self.metrics)
 
@@ -78,7 +77,7 @@ class _ProgressBar:
 
     def update_to_timestamp(self, timestamp: Timestamp):
         n = int(getattr(timestamp, self.timestamp_key))
-        n = n - self.pbar.n
+        n -= self.pbar.n
         self.update(int(n))
 
     def close(self):
@@ -183,7 +182,7 @@ class ProgressBarLogger(LoggerDestination):
         if self.should_log_traces:
             for trace_name, trace in traces.items():
                 trace_str = format_log_data_value(trace)
-                self._log_to_console(f'[trace]: {trace_name}:' + trace_str + '\n')
+                self._log_to_console(f'[trace]: {trace_name}:{trace_str}' + '\n')
 
     def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
         for metric_name, metric_value in metrics.items():

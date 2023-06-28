@@ -175,24 +175,21 @@ def _legacy_optim_state_dict_to_load(
     if version.parse(torch.__version__) < version.parse('1.13.0'):
         raise RuntimeError('To use FSDP with Composer, you must use torch>=1.13.0.')
     from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-    if state_dict_type == 'sharded':
-        # Optimizer and optimizer state dict are already sharded, but not
-        # flattened, so we flatten the state dict then load it.
-        assert optim_state_dict is not None
-        flattened_optim_state_dict = FSDP.flatten_sharded_optim_state_dict(sharded_optim_state_dict=optim_state_dict,
-                                                                           model=model,
-                                                                           optim=optim)
-        return flattened_optim_state_dict
-    elif state_dict_type == 'local':
+    if state_dict_type == 'local':
         # Optimizer and optimizer state dict are already sharded and flattened,
         # so just load the state_dict.
         return optim_state_dict
-    else:  # fsdp_state_dict_type == 'full'
-        # FSDP enabled, but fsdp_state_dict is set to 'full', so the state dict
-        # is a full state dict and we must shard and flatten it first before loading it.
-        sharded_optim_state_dict = FSDP.scatter_full_optim_state_dict(full_optim_state_dict=optim_state_dict,
-                                                                      model=model)
-        return sharded_optim_state_dict
+    elif state_dict_type == 'sharded':
+        # Optimizer and optimizer state dict are already sharded, but not
+        # flattened, so we flatten the state dict then load it.
+        assert optim_state_dict is not None
+        return FSDP.flatten_sharded_optim_state_dict(
+            sharded_optim_state_dict=optim_state_dict, model=model, optim=optim
+        )
+    else:
+        return FSDP.scatter_full_optim_state_dict(
+            full_optim_state_dict=optim_state_dict, model=model
+        )
 
 
 def get_fsdp_sharded_optim_state_dict(full_optim_state_dict: Dict[str, Any], model: torch.nn.Module):
@@ -473,11 +470,7 @@ class State(Serializable):
         self.predict_timestamp = Timestamp()
         self._precision = Precision(precision)
 
-        if optimizers is None:
-            self._optimizers = []
-        else:
-            self._optimizers = list(ensure_tuple(optimizers))
-
+        self._optimizers = [] if optimizers is None else list(ensure_tuple(optimizers))
         self._schedulers = []
 
         self.scaler = scaler
@@ -576,10 +569,7 @@ class State(Serializable):
             dataloader = dataloader.dataloader
 
         # If what we now have is an actual DataLoader, return its dataset. If not, return None.
-        if isinstance(dataloader, DataLoader):
-            return dataloader.dataset
-        else:
-            return None
+        return dataloader.dataset if isinstance(dataloader, DataLoader) else None
 
     @property
     def train_dataloader(self) -> Optional[Union[Iterable, DataLoader]]:
@@ -750,10 +740,10 @@ class State(Serializable):
         if version.parse(torch.__version__) < version.parse('1.13.0'):
             return False
         from torch.distributed.fsdp import FullyShardedDataParallel
-        for module in self.model.modules():
-            if isinstance(module, FullyShardedDataParallel):
-                return True
-        return False
+        return any(
+            isinstance(module, FullyShardedDataParallel)
+            for module in self.model.modules()
+        )
 
     @property
     def fsdp_state_dict_type(self):
@@ -792,8 +782,7 @@ class State(Serializable):
         This metadata is used for checking compatibility between the current environment/setup
         and the environment/setup that was used for the checkpoint that is being loaded in
         """
-        metadata_dict = {}
-        metadata_dict['composer_env_info'] = get_composer_env_dict()
+        metadata_dict = {'composer_env_info': get_composer_env_dict()}
         metadata_dict['device'] = self.device.name
         metadata_dict['precision'] = self.precision.value
         metadata_dict['world_size'] = dist.get_world_size()
@@ -950,14 +939,17 @@ class State(Serializable):
                                 'failing to load weights for some layers.'))
                         continue
                     # Raise warning if we are unable to safely autoapply
-                    if type(algo) in current_algos and not serialized_value['repr'] in current_algos[type(algo)]:
+                    if (
+                        type(algo) in current_algos
+                        and serialized_value['repr']
+                        not in current_algos[type(algo)]
+                    ):
                         warnings.warn(
                             textwrap.dedent(
                                 f"required_on_load algorithm {serialized_value['repr']} was enabled when training the "
                                 f"loaded checkpoint but is now specified in the following forms: {', '.join(current_algos[type(algo)])}."
                                 'Potential parameter discrepancies for this required_on_load algorithm may lead to '
                                 'unexpected behavior, including failing to load weights for some layers.'))
-                    # Otherwise, queue algorithm to be autoapplied
                     elif type(algo) not in current_algos:
                         missing_algos.add(algo)
                         missing_algo_names.append(algo_name)
@@ -1122,11 +1114,11 @@ class State(Serializable):
                         optim_state_dict = FSDP.optim_state_dict_to_load(  #  type: ignore
                             optim_state_dict=optim_state_dict, model=self.model, optim=optimizer)
                 assert optim_state_dict is not None
-                optimizer.load_state_dict(optim_state_dict)
             else:
                 assert optim_state_dict is not None
-                log.debug(f'Loading optimizer state dict')
-                optimizer.load_state_dict(optim_state_dict)
+                log.debug('Loading optimizer state dict')
+
+            optimizer.load_state_dict(optim_state_dict)
 
     def _load_dataset_state(self, obj: Dict[str, Any]) -> None:
         """Load the dataset state.
@@ -1203,7 +1195,7 @@ class State(Serializable):
 
             # Restructure algorithms serialized_value from list to dict
             if attribute_name == 'algorithms' and isinstance(serialized_value, list):
-                serialized_value = {algo_name: algo_serialized for algo_name, algo_serialized in serialized_value}
+                serialized_value = dict(serialized_value)
 
             if attribute_name == 'dataset_state':
                 self._load_dataset_state(serialized_value)
@@ -1341,9 +1333,8 @@ class State(Serializable):
         """
         if dataloader is None:
             dataloader_label = None
-        else:
-            if dataloader_label is None:
-                raise ValueError('If the `dataloader` is specified, then `dataloader_label` must not be None.')
+        elif dataloader_label is None:
+            raise ValueError('If the `dataloader` is specified, then `dataloader_label` must not be None.')
         self._dataloader = dataloader
         self._dataloader_label = dataloader_label
         if dataloader is not None:

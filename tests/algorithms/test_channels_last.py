@@ -21,16 +21,13 @@ def _infer_memory_format(tensor: torch.Tensor) -> str:
     if _has_singleton_dimension(tensor):
         raise ValueError(f'Tensor of shape {tensor.shape} has singleton dimensions, '
                          'memory format cannot be infered from strides.')
+    strides = tensor.stride()
+    if not isinstance(strides, tuple) or len(strides) != 4:
+        raise ValueError(f'Tensor must be 4-dim, got shape {tensor.shape}')
+    order = np.argsort(strides)
     base_order = list('nchw')  # type: ignore
 
-    strides = tensor.stride()
-    if isinstance(strides, tuple) and len(strides) == 4:
-        order = np.argsort(strides)
-        # smallest stride should be last in format, so reverse order
-        memory_format = ''.join([base_order[o] for o in reversed(order)])
-        return memory_format
-    else:
-        raise ValueError(f'Tensor must be 4-dim, got shape {tensor.shape}')
+    return ''.join([base_order[o] for o in reversed(order)])
 
 
 @pytest.fixture()

@@ -108,10 +108,7 @@ class MMDetModel(ComposerModel):
         return preds
 
     def get_metrics(self, is_train: bool = False):
-        if is_train:
-            metrics = self.train_metrics
-        else:
-            metrics = self.val_metrics
+        metrics = self.train_metrics if is_train else self.val_metrics
         return metrics if metrics else {}
 
     def update_metric(self, batch: Any, outputs: Any, metric: Metric):

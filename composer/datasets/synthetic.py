@@ -100,7 +100,10 @@ class SyntheticBatchPairDataset(torch.utils.data.Dataset):
 
     def _validate_label_inputs(self, label_type: SyntheticDataLabelType, num_classes: Optional[int],
                                label_shape: Optional[Sequence[int]]):
-        if label_type == SyntheticDataLabelType.CLASSIFICATION_INT or label_type == SyntheticDataLabelType.CLASSIFICATION_ONE_HOT:
+        if label_type in [
+            SyntheticDataLabelType.CLASSIFICATION_INT,
+            SyntheticDataLabelType.CLASSIFICATION_ONE_HOT,
+        ]:
             if num_classes is None or num_classes <= 0:
                 raise ValueError('classification label_types require num_classes > 0')
 
@@ -108,7 +111,7 @@ class SyntheticBatchPairDataset(torch.utils.data.Dataset):
         return self.total_dataset_size
 
     def __getitem__(self, idx: int):
-        idx = idx % self.num_unique_samples_to_create
+        idx %= self.num_unique_samples_to_create
         if self.input_data is None:
             # Generating data on the first call to __getitem__ so that data is stored on the correct gpu,
             # after DeviceSingleGPU calls torch.cuda.set_device
@@ -138,9 +141,9 @@ class SyntheticBatchPairDataset(torch.utils.data.Dataset):
             # If separable, force the positive examples to have a higher mean than the negative examples
             if self.data_type == SyntheticDataType.SEPARABLE:
                 assert self.label_type == SyntheticDataLabelType.CLASSIFICATION_INT, \
-                    'SyntheticDataType.SEPARABLE requires integer classes.'
+                        'SyntheticDataType.SEPARABLE requires integer classes.'
                 assert torch.max(input_target) == 1 and torch.min(input_target) == 0, \
-                    'SyntheticDataType.SEPARABLE only supports binary labels'
+                        'SyntheticDataType.SEPARABLE only supports binary labels'
                 # Make positive examples have mean = 3 and negative examples have mean = -3
                 # so they are easier to separate with a classifier
                 input_data[input_target == 0] -= 3

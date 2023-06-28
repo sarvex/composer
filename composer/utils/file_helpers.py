@@ -166,12 +166,11 @@ FORMAT_NAME_WITH_DIST_TABLE = """
 
 
 def format_name_with_dist(format_str: str, run_name: str, **extra_format_kwargs: object):  # noqa: D103
-    formatted_str = format_str.format(
+    return format_str.format(
         run_name=run_name,
         **_get_dist_config(strict=False),
         **extra_format_kwargs,
     )
-    return formatted_str
 
 
 format_name_with_dist.__doc__ = f"""
@@ -259,7 +258,7 @@ def format_name_with_dist_and_time(
     timestamp: Timestamp,
     **extra_format_kwargs: object,
 ):  # noqa: D103
-    formatted_str = format_str.format(
+    return format_str.format(
         run_name=run_name,
         epoch=int(timestamp.epoch),
         batch=int(timestamp.batch),
@@ -274,7 +273,6 @@ def format_name_with_dist_and_time(
         **_get_dist_config(strict=False),
         **extra_format_kwargs,
     )
-    return formatted_str
 
 
 format_name_with_dist_and_time.__doc__ = f"""\
@@ -343,8 +341,9 @@ def maybe_create_object_store_from_uri(uri: str) -> Optional[ObjectStore]:
     if backend == 's3':
         return S3ObjectStore(bucket=bucket_name)
     elif backend == 'wandb':
-        raise NotImplementedError(f'There is no implementation for WandB load_object_store via URI. Please use '
-                                  'WandBLogger')
+        raise NotImplementedError(
+            'There is no implementation for WandB load_object_store via URI. Please use WandBLogger'
+        )
     elif backend == 'gs':
         if 'GCS_KEY' not in os.environ or 'GCS_SECRET' not in os.environ:
             raise ValueError(
@@ -407,8 +406,9 @@ def maybe_create_remote_uploader_downloader_from_uri(
             })
 
     elif backend == 'wandb':
-        raise NotImplementedError(f'There is no implementation for WandB via URI. Please use '
-                                  'WandBLogger with log_artifacts set to True')
+        raise NotImplementedError(
+            'There is no implementation for WandB via URI. Please use WandBLogger with log_artifacts set to True'
+        )
 
     else:
         raise NotImplementedError(f'There is no implementation for the cloud backend {backend} via URI. Please use '
@@ -458,7 +458,11 @@ def get_file(path: str,
     Raises:
         FileNotFoundError: If the ``path`` does not exist.
     """
-    if object_store is None and not (path.lower().startswith('http://') or path.lower().startswith('https://')):
+    if (
+        object_store is None
+        and not path.lower().startswith('http://')
+        and not path.lower().startswith('https://')
+    ):
         object_store = maybe_create_object_store_from_uri(path)
         _, _, path = parse_uri(path)
 
@@ -494,7 +498,7 @@ def get_file(path: str,
             progress_bar=progress_bar,
         )
     except FileNotFoundError as e:
-        new_path = path + '.symlink'
+        new_path = f'{path}.symlink'
         try:
             # Follow the symlink
             return get_file(path=new_path,
@@ -549,7 +553,7 @@ def _get_file(
             else:
                 total_size_in_bytes = 0
 
-            tmp_path = destination + f'.{uuid.uuid4()}.tmp'
+            tmp_path = f'{destination}.{uuid.uuid4()}.tmp'
             try:
                 with open(tmp_path, 'wb') as f:
                     for data in iterate_with_callback(
@@ -581,7 +585,7 @@ def _get_file(
 
 def _get_callback(description: str):
     if len(description) > 60:
-        description = description[:42] + '...' + description[-15:]
+        description = f'{description[:42]}...{description[-15:]}'
     pbar = None
 
     def callback(num_bytes: int, total_size: int):

@@ -27,7 +27,7 @@ def _load_trace(file: Union[str, pathlib.Path]) -> Union[Dict, List]:
             if trace_str.endswith('}'):
                 trace_str += ']'
             if trace_str.endswith(','):
-                trace_str = trace_str[-1] + ']'
+                trace_str = f'{trace_str[-1]}]'
         return json.loads(trace_str)
 
 

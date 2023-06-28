@@ -24,7 +24,9 @@ from tests.common.models import SimpleTransformerClassifier, SimpleTransformerMa
 def get_model_embeddings(model):
     if isinstance(model, HuggingFaceModel):
         return model.model.bert.embeddings.word_embeddings.weight
-    elif isinstance(model, SimpleTransformerClassifier) or isinstance(model, SimpleTransformerMaskedLM):
+    elif isinstance(
+        model, (SimpleTransformerClassifier, SimpleTransformerMaskedLM)
+    ):
         return model.transformer_base.embedding.weight
     else:
         raise ValueError('Unsure how to get embeddings layer from model.')
@@ -191,7 +193,6 @@ def inference_test_helper(finetuning_output_path, rud, finetuning_model, algorit
 
 
 @device('cpu', 'gpu')
-# Note: the specificity of these settings are due to incompatibilities (e.g. the simpletransformer model is not traceable)
 @pytest.mark.parametrize('model_type,algorithms,save_format', [('tinybert_hf', [GatedLinearUnits], 'onnx'),
                                                                ('simpletransformer', [], 'torchscript')])
 @pytest.mark.parametrize('onnx_opset_version', [13, None])
@@ -205,7 +206,9 @@ def test_full_nlp_pipeline(model_type, algorithms, save_format, tiny_bert_tokeni
     pytest.importorskip('libcloud')
     pytest.importorskip('transformers')
 
-    if onnx_opset_version == None and version.parse(torch.__version__) < version.parse('1.13'):
+    if onnx_opset_version is None and version.parse(
+        torch.__version__
+    ) < version.parse('1.13'):
         pytest.skip("Don't test prior PyTorch version's default Opset version.")
 
     algorithms = [algorithm() for algorithm in algorithms]

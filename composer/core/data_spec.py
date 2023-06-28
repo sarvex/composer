@@ -48,14 +48,9 @@ def _split_mapping(m, microbatch_size: int):
             chunked[k] = _split_list(v, microbatch_size)
         elif isinstance(v, Mapping):
             chunked[k] = _split_mapping(v, microbatch_size)
-        elif isinstance(v, (int, float, str, bool)):
-            # Defer broadcasting primitives until we know num_chunks
-            pass
-        else:
+        elif not isinstance(v, (int, float, str, bool)):
             raise ValueError(f'Unsupported batch type: {type(v)}.')
-    num_chunks = 1  # Default to 1 chunks if there are no tensors or everything is primitive
-    if len(chunked.keys()) != 0:
-        num_chunks = len(list(chunked.values())[0])
+    num_chunks = len(list(chunked.values())[0]) if len(chunked.keys()) != 0 else 1
     # Broadcast primitives to all chunks
     for k, v in m.items():
         if isinstance(v, (int, float, str, bool)):
@@ -70,10 +65,7 @@ def _check_list_is_primitives(l):
     first_type = type(l[0])
     if not isinstance(l[0], (int, float, str, bool)):
         return False
-    for item in l:
-        if type(item) != first_type:
-            return False
-    return True
+    return all(type(item) == first_type for item in l)
 
 
 def _default_split_batch(batch: Any, microbatch_size: int) -> Sequence:
@@ -187,15 +179,14 @@ class DataSpec:
 
         if num_samples is not None:
             self.num_samples = num_samples
-        else:
-            if isinstance(dataloader, torch.utils.data.DataLoader) and isinstance(dataloader.dataset,
+        elif isinstance(dataloader, torch.utils.data.DataLoader) and isinstance(dataloader.dataset,
                                                                                   collections.abc.Sized):
-                try:
-                    self.num_samples = len(dataloader.dataset)
-                except (TypeError, NotImplementedError):
-                    self.num_samples = None
-            else:
+            try:
+                self.num_samples = len(dataloader.dataset)
+            except (TypeError, NotImplementedError):
                 self.num_samples = None
+        else:
+            self.num_samples = None
 
         if isinstance(dataloader, torch.utils.data.DataLoader):
             if dataloader._iterator is not None:

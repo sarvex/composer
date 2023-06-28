@@ -71,9 +71,7 @@ class Device(Serializable, ABC):
         """
 
         def _to_device(x):
-            if isinstance(x, torch.Tensor):
-                return self.tensor_to_device(x)
-            return x
+            return self.tensor_to_device(x) if isinstance(x, torch.Tensor) else x
 
         return _map_batch(batch, _to_device)
 

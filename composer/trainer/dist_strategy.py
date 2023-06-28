@@ -112,8 +112,9 @@ def prepare_ddp_module(module: torch.nn.Module, find_unused_parameters: bool) ->
     if dist.is_available() and dist.is_initialized():
         if any((p.requires_grad for p in module.parameters())):
             log.debug('Wrapping model with DistributedDataParallel')
-            ddp_model = DistributedDataParallel(module, find_unused_parameters=find_unused_parameters)
-            return ddp_model
+            return DistributedDataParallel(
+                module, find_unused_parameters=find_unused_parameters
+            )
         return module
     if dist.is_available():
         raise RuntimeError('Please call dist.initialize_dist() before calling ddp.prepare_module()')
@@ -176,7 +177,7 @@ def _recreate_fsdp_param_groups_from_unwrapped_opt_info(
     from torch.distributed.fsdp._common_utils import clean_tensor_name
 
     # initialize an empty list of parameters for each optimizer group
-    for group_num in group_num_to_optimizer_info.keys():
+    for group_num in group_num_to_optimizer_info:
         group_num_to_optimizer_info[group_num]['params'] = []
 
     for fsdp_name, param in fsdp_wrapped_named_params:
@@ -524,7 +525,7 @@ def prepare_fsdp_module(
 
     # Print FSDP wrapped model and FSDP config if `verbose=True`
     if fsdp_config['verbose']:
-        print(f'FSDP: Wrapped Model:')
+        print('FSDP: Wrapped Model:')
         print(model)
         print(f'FSDP: Using sharding_strategy={sharding_strategy}')
         print(f'FSDP: Using cpu_offload={cpu_offload}')

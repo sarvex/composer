@@ -42,11 +42,10 @@ def block_stochastic_forward(self, x):
 
         out += identity
         out = self.relu(out)
+    elif self.downsample is None:
+        out = identity
     else:
-        if self.downsample is not None:
-            out = self.relu(self.downsample(identity))
-        else:
-            out = identity
+        out = self.relu(self.downsample(identity))
     return out
 
 
@@ -100,7 +99,7 @@ def make_resnet_bottleneck_stochastic(module: Bottleneck, module_index: int, mod
     """
 
     if drop_distribution == 'linear':
-        drop_rate = ((module_index + 1) / module_count) * drop_rate
+        drop_rate *= (module_index + 1) / module_count
     module.drop_rate = torch.tensor(drop_rate)
 
     stochastic_func = block_stochastic_forward if stochastic_method == 'block' else sample_stochastic_forward

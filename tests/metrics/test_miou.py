@@ -11,9 +11,13 @@ from composer.metrics import MIoU
 @pytest.fixture
 def block_2D_targets():
     base = torch.arange(4)
-    targets = []
-    for i in range(4):
-        targets.append(torch.roll(base, i).repeat_interleave(2).view(2, 4).repeat_interleave(2, dim=0))
+    targets = [
+        torch.roll(base, i)
+        .repeat_interleave(2)
+        .view(2, 4)
+        .repeat_interleave(2, dim=0)
+        for i in range(4)
+    ]
     targets = torch.stack(targets)
     return targets
 

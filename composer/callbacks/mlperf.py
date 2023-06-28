@@ -200,13 +200,12 @@ class MLPerfCallback(Callback):
         self._file_handler.setLevel(logging.INFO)
         self.mllogger.logger.addHandler(self._file_handler)
 
-        if self.cache_clear_cmd is not None:
-            if _local_rank_zero():
-                subprocess.run(self.cache_clear_cmd.split(), check=True, text=True)
-                self.mllogger.start(key=mllog.constants.CACHE_CLEAR)
-        else:
+        if self.cache_clear_cmd is None:
             warnings.warn('cache_clear_cmd was not provided. For a valid submission, please provide the command.')
 
+        elif _local_rank_zero():
+            subprocess.run(self.cache_clear_cmd.split(), check=True, text=True)
+            self.mllogger.start(key=mllog.constants.CACHE_CLEAR)
         dist.barrier()
 
         if _local_rank_zero():
@@ -276,7 +275,9 @@ class MLPerfCallback(Callback):
         except ImportError:
             pass
 
-        raise TypeError(f'torch dataloader or ffcv dataloader required (and ffcv installed)')
+        raise TypeError(
+            'torch dataloader or ffcv dataloader required (and ffcv installed)'
+        )
 
     def fit_start(self, state: State, logger: Logger) -> None:
         if _global_rank_zero():

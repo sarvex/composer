@@ -49,20 +49,22 @@ def package_files(prefix: str, directory: str, extension: str):
     # from https://stackoverflow.com/a/36693250
     paths = []
     for (path, _, filenames) in os.walk(os.path.join(prefix, directory)):
-        for filename in filenames:
-            if filename.endswith(extension):
-                paths.append(os.path.relpath(os.path.join(path, filename), prefix))
+        paths.extend(
+            os.path.relpath(os.path.join(path, filename), prefix)
+            for filename in filenames
+            if filename.endswith(extension)
+        )
     return paths
 
 
 with open('README.md', 'r', encoding='utf-8') as fh:
     long_description = fh.read()
 
+start_tag = '<!-- SETUPTOOLS_LONG_DESCRIPTION_HIDE_BEGIN -->'
+end_tag = '<!-- SETUPTOOLS_LONG_DESCRIPTION_HIDE_END -->'
 # Hide the content between <!-- SETUPTOOLS_LONG_DESCRIPTION_HIDE_BEGIN --> and
 # <!-- SETUPTOOLS_LONG_DESCRIPTION_HIDE_END --> tags in the README
 while True:
-    start_tag = '<!-- SETUPTOOLS_LONG_DESCRIPTION_HIDE_BEGIN -->'
-    end_tag = '<!-- SETUPTOOLS_LONG_DESCRIPTION_HIDE_END -->'
     start = long_description.find(start_tag)
     end = long_description.find(end_tag)
     if start == -1:
@@ -89,135 +91,71 @@ install_requires = [
     'importlib-metadata>=5.0.0,<7',
     'mosaicml-cli>=0.4.0,<0.5',
 ]
-extra_deps = {}
-
-extra_deps['base'] = []
-
-extra_deps['dev'] = [
-    # Imports for docs builds and running tests
-    # Pinning versions strictly to avoid random test failures.
-    # Should manually update dependency versions occassionally.
-    'custom_inherit==2.4.1',
-    'junitparser==3.1.0',
-    'coverage[toml]==7.2.7',
-    'fasteners==0.18',  # object store tests require fasteners
-    'pytest==7.4.0',
-    'toml==0.10.2',
-    'ipython==8.11.0',
-    'ipykernel==6.23.3',
-    'jupyter==1.0.0',
-    'yamllint==1.32.0',
-    'recommonmark==0.7.1',
-    'sphinx==4.4.0',
-    'pre-commit>=2.18.1,<3',
-    # embedding md in rst require docutils>=0.17. See
-    # https://myst-parser.readthedocs.io/en/latest/sphinx/use.html?highlight=parser#include-markdown-files-into-an-rst-file
-    'docutils==0.17.1',
-    'sphinx_markdown_tables==0.0.17',
-    'sphinx-argparse==0.4.0',
-    'sphinxcontrib.katex==0.9.6',
-    'sphinxext.opengraph==0.8.2',
-    'sphinxemoji==0.2.0',
-    'furo==2022.9.29',
-    'sphinx-copybutton==0.5.2',
-    'testbook==0.4.2',
-    'myst-parser==0.16.1',
-    'sphinx_panels==0.6.0',
-    'sphinxcontrib-images==0.9.4',
-    'pytest_codeblocks==0.16.1',
-    'traitlets==5.9.0',
-    'nbsphinx==0.9.1',
-    'pandoc==2.3',
-    'pypandoc==1.11',
-    'GitPython==3.1.31',
-    'moto[s3]>=4.0.1,<5',
-    'mock-ssh-server==0.9.1',
-    'cryptography==38.0.4',
-    'pytest-httpserver>=1.0.4,<1.1',
-    'setuptools<=59.5.0',
-]
-
-extra_deps['health_checker'] = {
-    'pynvml>=11.5.0,<12',
+extra_deps = {
+    'base': [],
+    'dev': [
+        'custom_inherit==2.4.1',
+        'junitparser==3.1.0',
+        'coverage[toml]==7.2.7',
+        'fasteners==0.18',
+        'pytest==7.4.0',
+        'toml==0.10.2',
+        'ipython==8.11.0',
+        'ipykernel==6.23.3',
+        'jupyter==1.0.0',
+        'yamllint==1.32.0',
+        'recommonmark==0.7.1',
+        'sphinx==4.4.0',
+        'pre-commit>=2.18.1,<3',
+        'docutils==0.17.1',
+        'sphinx_markdown_tables==0.0.17',
+        'sphinx-argparse==0.4.0',
+        'sphinxcontrib.katex==0.9.6',
+        'sphinxext.opengraph==0.8.2',
+        'sphinxemoji==0.2.0',
+        'furo==2022.9.29',
+        'sphinx-copybutton==0.5.2',
+        'testbook==0.4.2',
+        'myst-parser==0.16.1',
+        'sphinx_panels==0.6.0',
+        'sphinxcontrib-images==0.9.4',
+        'pytest_codeblocks==0.16.1',
+        'traitlets==5.9.0',
+        'nbsphinx==0.9.1',
+        'pandoc==2.3',
+        'pypandoc==1.11',
+        'GitPython==3.1.31',
+        'moto[s3]>=4.0.1,<5',
+        'mock-ssh-server==0.9.1',
+        'cryptography==38.0.4',
+        'pytest-httpserver>=1.0.4,<1.1',
+        'setuptools<=59.5.0',
+    ],
+    'health_checker': {'pynvml>=11.5.0,<12'},
+    'slack': {'slack_sdk>=3.19.5,<4'},
+    'deepspeed': ['deepspeed==0.8.3'],
+    'wandb': ['wandb>=0.13.2,<0.16'],
+    'comet_ml': ['comet_ml>=3.31.12,<4.0.0'],
+    'tensorboard': ['tensorboard>=2.9.1,<3.0.0'],
+    'unet': ['monai>=0.9.1,<1.3', 'scikit-learn>=1.0.1,<2'],
+    'vit': ['vit_pytorch==0.35.8'],
+    'timm': ['timm>=0.5.4,<0.6'],
+    'coco': ['pycocotools>=2.0.4,<3'],
+    'nlp': ['transformers>=4.11,<4.31', 'datasets>=2.4,<3'],
+    'sentencepiece': ['protobuf<3.21', 'sentencepiece==0.1.99'],
+    'mlperf': ['py-cpuinfo>=8.0.0,<10'],
+    'streaming': [
+        'mosaicml-streaming<1.0',
+        'boto3>=1.21.45,<2',
+        'paramiko>=2.11.0,<3',
+    ],
+    'libcloud': ['apache-libcloud>=3.3.1,<4'],
+    'oci': ['oci>=2.88.2,<3.0.0'],
+    'onnx': ['onnx>=1.12.0,<2', 'onnxruntime>=1.12.1,<2'],
+    'mlflow': ['mlflow>=2.0.1,<3.0'],
 }
 
-extra_deps['slack'] = {
-    'slack_sdk>=3.19.5,<4',
-}
-
-extra_deps['deepspeed'] = [
-    'deepspeed==0.8.3',
-]
-
-extra_deps['wandb'] = [
-    'wandb>=0.13.2,<0.16',
-]
-
-extra_deps['comet_ml'] = [
-    'comet_ml>=3.31.12,<4.0.0',
-]
-
-extra_deps['tensorboard'] = [
-    'tensorboard>=2.9.1,<3.0.0',
-]
-
-extra_deps['unet'] = [
-    'monai>=0.9.1,<1.3',
-    'scikit-learn>=1.0.1,<2',
-]
-
-extra_deps['vit'] = [
-    'vit_pytorch==0.35.8',
-]
-
-extra_deps['timm'] = [
-    'timm>=0.5.4,<0.6',
-]
-
-extra_deps['coco'] = [
-    'pycocotools>=2.0.4,<3',
-]
-
-extra_deps['nlp'] = [
-    'transformers>=4.11,<4.31',
-    'datasets>=2.4,<3',
-]
-
-extra_deps['sentencepiece'] = [
-    'protobuf<3.21',
-    'sentencepiece==0.1.99',
-]
-
-extra_deps['mlperf'] = [
-    # TODO: use pip when available: https://github.com/mlcommons/logging/issues/218
-    # "mlperf_logging @ git+https://github.com/mlperf/logging.git",
-    'py-cpuinfo>=8.0.0,<10',
-]
-
-extra_deps['streaming'] = [
-    'mosaicml-streaming<1.0',
-    'boto3>=1.21.45,<2',
-    'paramiko>=2.11.0,<3',
-]
-
-extra_deps['libcloud'] = [
-    'apache-libcloud>=3.3.1,<4',
-]
-
-extra_deps['oci'] = [
-    'oci>=2.88.2,<3.0.0',
-]
-
-extra_deps['onnx'] = [
-    'onnx>=1.12.0,<2',
-    'onnxruntime>=1.12.1,<2',
-]
-
-extra_deps['mlflow'] = [
-    'mlflow>=2.0.1,<3.0',
-]
-
-extra_deps['all'] = set(dep for deps in extra_deps.values() for dep in deps)
+extra_deps['all'] = {dep for deps in extra_deps.values() for dep in deps}
 
 composer_data_files = ['py.typed']
 composer_data_files += package_files('composer', 'yamls', '.yaml')

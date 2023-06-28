@@ -64,8 +64,7 @@ class UNet(ComposerModel):
     def forward(self, batch: Any) -> torch.Tensor:
         x, _ = batch
         x = x.squeeze(1)  # type: ignore
-        logits = self.module(x)
-        return logits
+        return self.module(x)
 
     def inference2d(self, image):
         """Runs inference on a 3D image, by passing each depth slice through the model."""
@@ -89,19 +88,18 @@ class UNet(ComposerModel):
     def eval_forward(self, batch: Any, outputs: Optional[Any] = None):
         assert self.training is False, 'For validation, model must be in eval mode'
         image, _ = batch
-        pred = self.inference2d(image)
-        return pred
+        return self.inference2d(image)
 
     def build_nnunet(self) -> torch.nn.Module:
         kernels = [[3, 3]] * 6
         strides = [[1, 1]] + [[2, 2]] * 5
-        model = UNetModel(in_channels=4,
-                          n_class=4,
-                          kernels=kernels,
-                          strides=strides,
-                          dimension=2,
-                          residual=True,
-                          normalization_layer='batch',
-                          negative_slope=0.01)
-
-        return model
+        return UNetModel(
+            in_channels=4,
+            n_class=4,
+            kernels=kernels,
+            strides=strides,
+            dimension=2,
+            residual=True,
+            normalization_layer='batch',
+            negative_slope=0.01,
+        )

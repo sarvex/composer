@@ -103,30 +103,25 @@ def _check_factorization(f: Union[_RankReduce, _RankReduceConv2d],
 
     k = f.C_latent_new
     if k >= f.C_in or k >= f.C_out:
-        # no point in factorizing with latent dim bigger than
-        # either input or output; so just regress input onto output
-        assert Wa is not None
         assert Wb is None
-        assert Wa.shape[in_dim] == f.C_in
         assert Wa.shape[out_dim] == f.C_out
     elif k >= f.C_latent_now:
-        # no need to factorize any futher than current factorization
-        assert Wa is not None
-        assert Wa.shape[in_dim] == f.C_in
         assert Wa.shape[out_dim] == f.C_latent_now
     else:
         # actually needed to factorize
         assert bias is not None
-        assert Wa is not None
         assert Wb is not None
         assert bias.ndim == 1
         assert bias.shape[0] == f.C_out
-        assert Wa.shape[in_dim] == f.C_in
         assert Wa.shape[out_dim] == f.C_latent_new
         assert Wb is not None  # should have actually factorized weights
         assert Wb.shape[in_dim] == f.C_latent_new
         assert Wb.shape[out_dim] == f.C_out
 
+    assert Wa.shape[in_dim] == f.C_in
+    # no point in factorizing with latent dim bigger than
+    # either input or output; so just regress input onto output
+    assert Wa is not None
     assert nmse < 1.0  # should explain variance better than just predicting mean
     if prev_nmse is not None:
         assert nmse <= prev_nmse + 1e-8  # error decreases over time

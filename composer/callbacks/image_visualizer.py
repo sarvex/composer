@@ -150,8 +150,7 @@ class ImageVisualizer(Callback):
 def _make_input_images(inputs: torch.Tensor, num_images: int):
     if inputs.shape[0] < num_images:
         num_images = inputs.shape[0]
-    images = inputs[0:num_images].data.cpu().numpy()
-    return images
+    return inputs[:num_images].data.cpu().numpy()
 
 
 def _make_segmentation_images(inputs: torch.Tensor,
@@ -164,10 +163,10 @@ def _make_segmentation_images(inputs: torch.Tensor,
     if min([inputs.shape[0], targets.shape[0], outputs.shape[0]]) < num_images:
         num_images = min([inputs.shape[0], targets.shape[0], outputs.shape[0]])
 
-    images = inputs[0:num_images].data.cpu().numpy()
+    images = inputs[:num_images].data.cpu().numpy()
 
-    targets = targets[0:num_images]
-    outputs = outputs[0:num_images]
+    targets = targets[:num_images]
+    outputs = outputs[:num_images]
     # Ensure the targets are in the expected format
     if infer_target_type(outputs, targets) == 'one_hot':
         if channels_last:

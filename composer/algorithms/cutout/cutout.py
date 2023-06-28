@@ -60,7 +60,7 @@ def cutout_batch(input: ImgT, num_holes: int = 1, length: float = 0.5, uniform_s
 
     mask = torch.ones_like(X_tensor)
     for _ in range(num_holes):
-        if uniform_sampling is True:
+        if uniform_sampling:
             y = np.random.randint(-length // 2, high=h + length // 2)
             x = np.random.randint(-length // 2, high=w + length // 2)
         else:
@@ -70,8 +70,7 @@ def cutout_batch(input: ImgT, num_holes: int = 1, length: float = 0.5, uniform_s
         mask = _generate_mask(mask, w, h, x, y, length)
 
     X_cutout = X_tensor * mask
-    X_out = image_as_type(X_cutout, input.__class__)  # pyright struggling with unions
-    return X_out
+    return image_as_type(X_cutout, input.__class__)
 
 
 class CutOut(Algorithm):

@@ -92,7 +92,9 @@ class TestAlgorithmOrderingPasses:
         algorithm.apply = Mock(return_value='algo')
         algorithm.match = Mock(return_value=True)
 
-        algortihms = always_match_algorithms[0:2] + [algorithm] + always_match_algorithms[2:]
+        algortihms = (
+            always_match_algorithms[:2] + [algorithm] + always_match_algorithms[2:]
+        )
         dummy_state._algorithms = algortihms
 
         trace = run_event(Event.INIT, dummy_state, dummy_logger)
@@ -110,7 +112,9 @@ class TestAlgorithmOrderingPasses:
         algorithm.apply = Mock(return_value='algo')
         algorithm.match = Mock(return_value=True)
 
-        algorithms = always_match_algorithms[0:2] + [algorithm] + always_match_algorithms[2:]
+        algorithms = (
+            always_match_algorithms[:2] + [algorithm] + always_match_algorithms[2:]
+        )
         dummy_state._algorithms = algorithms
 
         trace = run_event(Event.INIT, dummy_state, dummy_logger)

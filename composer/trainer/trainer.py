@@ -107,11 +107,14 @@ def _filter_metrics(metrics: Dict[str, Metric], metric_names: Optional[List[str]
     if not metric_names:
         return metrics
     else:
-        filtered_metrics = {}
-        for name, metric in metrics.items():
-            if any(re.match(f'.*{metric_name}.*', name, re.IGNORECASE) for metric_name in metric_names):
-                filtered_metrics[name] = metric
-        return filtered_metrics
+        return {
+            name: metric
+            for name, metric in metrics.items()
+            if any(
+                re.match(f'.*{metric_name}.*', name, re.IGNORECASE)
+                for metric_name in metric_names
+            )
+        }
 
 
 def _validate_precision(precision: Precision, device: Device):
@@ -153,27 +156,26 @@ def _set_evaluator_interval_and_subset_num_batches(
                 dataloader_len = len(eval_dataloader)
             except TypeError:
                 dataloader_len = None
-            if dataloader_len == None:
+            if dataloader_len is None:
                 raise ValueError('eval_subset_num_batches must be set when using an infinite sized '
                                  'eval_dataloader where length is `None`. Otherwise, evaluation will '
                                  'run forever and never terminate.')
 
 
 def _is_auto_microbatching(device_train_microbatch_size: Optional[Union[int, str]], device: Device):
-    if device_train_microbatch_size == 'auto':
-        warnings.warn(("`device_train_microbatch_size='auto'` may potentially fail with unexpected "
-                       'CUDA errors. Auto microbatching attempts to catch CUDA Out of Memory errors '
-                       'and adjust the batch size, but it is possible CUDA will be put into an '
-                       'irrecoverable state due to PyTorch bugs, e.g. integer overflow. In this case, '
-                       'please manually set device_train_microbatch_size explicitly to an integer '
-                       'instead.'))
-        if not isinstance(device, DeviceGPU):
-            raise ValueError(
-                'Can only use adaptive device_train_microbatch_size on GPU. Please set device_train_microbatch_size >= 1.'
-            )
-        return True
-    else:
+    if device_train_microbatch_size != 'auto':
         return False
+    warnings.warn(("`device_train_microbatch_size='auto'` may potentially fail with unexpected "
+                   'CUDA errors. Auto microbatching attempts to catch CUDA Out of Memory errors '
+                   'and adjust the batch size, but it is possible CUDA will be put into an '
+                   'irrecoverable state due to PyTorch bugs, e.g. integer overflow. In this case, '
+                   'please manually set device_train_microbatch_size explicitly to an integer '
+                   'instead.'))
+    if not isinstance(device, DeviceGPU):
+        raise ValueError(
+            'Can only use adaptive device_train_microbatch_size on GPU. Please set device_train_microbatch_size >= 1.'
+        )
+    return True
 
 
 def _get_initial_device_train_microbatch_size(device_train_microbatch_size: Optional[Union[int, str]],
@@ -236,12 +238,11 @@ def _adjust_device_train_microbatch_size(state: State):
     if state.device_train_microbatch_size == 1:
         raise RuntimeError(('CUDA out of memory. The train loop failed with an internal microbatch of size 1.'
                             'The GPU does not have enough memory to process even 1 sample during train.'))
-    else:
-        original_microbatch_size = state.device_train_microbatch_size
-        state.device_train_microbatch_size = max(int(original_microbatch_size / 2), 1)
-        warnings.warn(
-            RuntimeWarning('CUDA out of memory detected. Train microbatch size will be decreased from '
-                           f'{original_microbatch_size} -> {state.device_train_microbatch_size}.'))
+    original_microbatch_size = state.device_train_microbatch_size
+    state.device_train_microbatch_size = max(int(original_microbatch_size / 2), 1)
+    warnings.warn(
+        RuntimeWarning('CUDA out of memory detected. Train microbatch size will be decreased from '
+                       f'{original_microbatch_size} -> {state.device_train_microbatch_size}.'))
     # Clear gradients in case failure happened during backwards pass
     if hasattr(state, 'outputs'):
         del state.outputs
@@ -266,12 +267,11 @@ def _adjust_device_eval_microbatch_size(evaluator: Evaluator):
     if evaluator.device_eval_microbatch_size == 1:
         raise RuntimeError(('CUDA out of memory. The eval loop failed with an internal microbatch of size 1.'
                             'The GPU does not have enough memory to process even 1 sample during eval.'))
-    else:
-        original_microbatch_size = evaluator.device_eval_microbatch_size
-        evaluator.device_eval_microbatch_size = max(int(original_microbatch_size / 2), 1)
-        warnings.warn(
-            RuntimeWarning('CUDA out of memory detected. Train microbatch size will be decreased from '
-                           f'{original_microbatch_size} -> {evaluator.device_eval_microbatch_size}.'))
+    original_microbatch_size = evaluator.device_eval_microbatch_size
+    evaluator.device_eval_microbatch_size = max(int(original_microbatch_size / 2), 1)
+    warnings.warn(
+        RuntimeWarning('CUDA out of memory detected. Train microbatch size will be decreased from '
+                       f'{original_microbatch_size} -> {evaluator.device_eval_microbatch_size}.'))
     torch.cuda.empty_cache()
 
 
@@ -317,7 +317,7 @@ def _generate_run_name() -> str:
     # change coolname randomness for different names with same seed
     coolname.replace_random(random.Random(os.urandom(128)))
     # prefixing with the time so experiments sorted alphabetically will have the latest experiment last
-    generated_run_name = str(int(time.time())) + '-' + coolname.generate_slug(2)
+    generated_run_name = f'{int(time.time())}-{coolname.generate_slug(2)}'
     run_name_list = [generated_run_name]
     # ensure all ranks have the same experiment name
     dist.broadcast_object_list(run_name_list)

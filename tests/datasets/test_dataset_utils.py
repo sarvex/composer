@@ -43,7 +43,7 @@ def scalar_target_list(num_samples: int):
 
 def test_scalar_target_collate(pil_image_list: List[Image.Image], scalar_target_list: np.ndarray,
                                correct_image_tensor: torch.Tensor):
-    batch = [(img, target) for img, target in zip(pil_image_list, scalar_target_list)]
+    batch = list(zip(pil_image_list, scalar_target_list))
     image_tensor, target_tensor = pil_image_collate(batch=batch)
 
     correct_target_tensor = torch.arange(correct_image_tensor.shape[0])
@@ -53,7 +53,7 @@ def test_scalar_target_collate(pil_image_list: List[Image.Image], scalar_target_
 
 def test_image_target_collate(pil_image_list: List[Image.Image], pil_target_list: List[Image.Image],
                               correct_image_tensor):
-    batch = [(img, target) for img, target in zip(pil_image_list, pil_target_list)]
+    batch = list(zip(pil_image_list, pil_target_list))
     image_tensor, target_tensor = pil_image_collate(
         batch=batch)  # type: ignore "Image" is incompatible with "ndarray[Unknown, Unknown]"
 

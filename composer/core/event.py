@@ -223,8 +223,7 @@ class Event(StringEnum):
         name = name.replace('before_', '')
         name = name.replace('after_', '')
         name = name.replace('_start', '')
-        name = name.replace('_end', '')
-        return name
+        return name.replace('_end', '')
 
     @property
     def is_predict(self) -> bool:

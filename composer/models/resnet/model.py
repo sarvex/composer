@@ -93,5 +93,9 @@ def composer_resnet(model_name: str,
         initializer = Initializer(initializer)
         model.apply(initializer.get_initializer())
 
-    composer_model = ComposerClassifier(model, train_metrics=train_metrics, val_metrics=val_metrics, loss_fn=loss_fn)
-    return composer_model
+    return ComposerClassifier(
+        model,
+        train_metrics=train_metrics,
+        val_metrics=val_metrics,
+        loss_fn=loss_fn,
+    )

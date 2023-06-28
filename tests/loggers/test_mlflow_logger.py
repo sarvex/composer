@@ -60,7 +60,9 @@ def test_mlflow_experiment_set_up_correctly(tmp_path):
 
     # Check new run can be created.
     del test_mlflow_logger
-    test_mlflow_logger = MLFlowLogger(experiment_name=mlflow_exp_name, run_name=mlflow_run_name + '_new')
+    test_mlflow_logger = MLFlowLogger(
+        experiment_name=mlflow_exp_name, run_name=f'{mlflow_run_name}_new'
+    )
     test_mlflow_logger.init(state=mock_state, logger=mock_logger)
     test_mlflow_logger.post_close()
 
@@ -99,7 +101,7 @@ def test_mlflow_logging_works(tmp_path, device):
         metric_file = run_file_path / Path('metrics') / Path(metric_name)
         with open(metric_file) as f:
             csv_reader = csv.reader(f, delimiter=' ')
-            lines = [line for line in csv_reader]
+            lines = list(csv_reader)
 
         assert len(lines) == num_batches
 

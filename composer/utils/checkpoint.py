@@ -79,25 +79,29 @@ class PartialFilePath:
         # if filename already has a suffix (e.g. file.pt), this would append to be file.pt.tar
         extra_suffix = '.tar' if is_deepspeed and not is_tar(self.filename) else ''
         if self.folder:
-            if keep_placeholders:
-                return os.path.join(
+            return (
+                os.path.join(
                     self.folder,
                     self.filename,
-                ) + extra_suffix
-            else:
-                return os.path.join(
+                )
+                + extra_suffix
+                if keep_placeholders
+                else os.path.join(
                     format_name_with_dist(self.folder, state.run_name),
-                    format_name_with_dist_and_time(self.filename, state.run_name, state.timestamp),
-                ) + extra_suffix
+                    format_name_with_dist_and_time(
+                        self.filename, state.run_name, state.timestamp
+                    ),
+                )
+                + extra_suffix
+            )
+        if keep_placeholders:
+            return self.filename + extra_suffix
         else:
-            if keep_placeholders:
-                return self.filename + extra_suffix
-            else:
-                return format_name_with_dist_and_time(
-                    self.filename,
-                    state.run_name,
-                    state.timestamp,
-                ) + extra_suffix
+            return format_name_with_dist_and_time(
+                self.filename,
+                state.run_name,
+                state.timestamp,
+            ) + extra_suffix
 
 
 def load_checkpoint(
@@ -319,16 +323,11 @@ def download_checkpoint(path: str,
                      'with the {rank} argument.')) from e
 
             if extracted_checkpoint_folder is not None:
-                try:
+                with contextlib.suppress(FileNotFoundError):
                     # it's an archive and needs to be extracted
                     with tarfile.open(rank_n_checkpoint_filepath) as tarball:
                         tarball.extractall(extracted_checkpoint_folder)
                         extracted_rank_n = True
-                except FileNotFoundError:
-                    # this will happen most of the time (i.e. whenever deepspeed
-                    # is not being used) so not logging anything
-                    pass
-
     finally:
         # Use busy wait to avoid timeouts on large downloads for non-sharded checkpoints
         if not checkpoint_is_sharded:
@@ -432,35 +431,34 @@ def safe_torch_load(
         load_fsdp_monolith_rank0_only: Whether the checkpoint is a monolith FSDP checkpoint.
     """
     try:
-        if load_fsdp_monolith_rank0_only:
-            log.info(
-                'Loading monolith FSDP checkpoint. Only rank 0 will load and broadcast non-weight/optimizer state.')
-            state_dict_list = [None]
-            model = None
-            optimizer = None
-            if dist.get_global_rank() == 0:
-                state_dict_list[0] = torch.load(composer_states_filepath, map_location=map_location)
-                # Don't broadcast model/optimizer state if they exist
-                if 'model' in state_dict_list[0]['state']:
-                    model = state_dict_list[0]['state']['model']
-                    state_dict_list[0]['state']['model'] = None
-                if 'optimizers' in state_dict_list[0]['state']:
-                    optimizer = state_dict_list[0]['state']['optimizers']
-                    state_dict_list[0]['state']['optimizers'] = None
-
-            log.debug('Broadcasting state_dict to all ranks.')
-            dist.broadcast_object_list(state_dict_list, src=0)
-            state_dict: Dict[str, Any] = state_dict_list[0]  # type: ignore
-
-            if dist.get_global_rank() == 0:
-                if model is not None:
-                    state_dict['state']['model'] = model
-                if optimizer is not None:
-                    state_dict['state']['optimizers'] = optimizer
-
-            return state_dict
-        else:
+        if not load_fsdp_monolith_rank0_only:
             return torch.load(composer_states_filepath, map_location=map_location)
+        log.info(
+            'Loading monolith FSDP checkpoint. Only rank 0 will load and broadcast non-weight/optimizer state.')
+        state_dict_list = [None]
+        model = None
+        optimizer = None
+        if dist.get_global_rank() == 0:
+            state_dict_list[0] = torch.load(composer_states_filepath, map_location=map_location)
+            # Don't broadcast model/optimizer state if they exist
+            if 'model' in state_dict_list[0]['state']:
+                model = state_dict_list[0]['state']['model']
+                state_dict_list[0]['state']['model'] = None
+            if 'optimizers' in state_dict_list[0]['state']:
+                optimizer = state_dict_list[0]['state']['optimizers']
+                state_dict_list[0]['state']['optimizers'] = None
+
+        log.debug('Broadcasting state_dict to all ranks.')
+        dist.broadcast_object_list(state_dict_list, src=0)
+        state_dict: Dict[str, Any] = state_dict_list[0]  # type: ignore
+
+        if dist.get_global_rank() == 0:
+            if model is not None:
+                state_dict['state']['model'] = model
+            if optimizer is not None:
+                state_dict['state']['optimizers'] = optimizer
+
+        return state_dict
     except TypeError as e:
         if 'Accuracy.__new__() missing 1 required positional argument' in str(e):
             raise Exception('As of v0.10.0, torchmetrics introduces a new required argument to Accuracy which '
@@ -511,7 +509,7 @@ def _restore_checkpoint(
             load_module_strict=strict_model_weights,
         )
         if load_path is None:
-            raise RuntimeError(f'Failed to load DeepSpeed checkpoint')
+            raise RuntimeError('Failed to load DeepSpeed checkpoint')
     elif load_weights_only:
         state.load_model_state(
             state_dict['state'],
@@ -578,8 +576,7 @@ def save_checkpoint(
     else:
         save_filename = PartialFilePath(filename).format(state, is_deepspeed)
 
-    dirname = os.path.dirname(save_filename)
-    if dirname:
+    if dirname := os.path.dirname(save_filename):
         os.makedirs(dirname, exist_ok=True)
 
     # only rank 0 saves the state_dict unless state.fsdp_sharded_state_dict_enabled=True.
@@ -621,7 +618,7 @@ def _compress_file(filename: str, basename: str):
 def _save_deepspeed_model(model, filename: str):
     """Save Deepspeed model and tarball the files."""
     write_mode = _get_write_mode(filename)
-    read_mode = 'r' + write_mode[1:]
+    read_mode = f'r{write_mode[1:]}'
 
     with tempfile.TemporaryDirectory() as tmpdir:
         model.save_checkpoint(tmpdir, _DEEPSPEED_TAG)

@@ -81,7 +81,7 @@ def _float_parameter(level: float, maxval: float):
     Returns:
         float: The result from scaling ``maxval`` according to ``level``.
     """
-    return float(level) * maxval / 10.
+    return level * maxval / 10.
 
 
 def _sample_level(n: float):

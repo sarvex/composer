@@ -141,7 +141,7 @@ def format_data_to_json_serializable(data: Any):
     if isinstance(data, torch.Tensor):
         if data.shape == () or reduce(operator.mul, data.shape, 1) == 1:
             return format_data_to_json_serializable(data.cpu().item())
-        return 'Tensor of shape ' + str(data.shape)
+        return f'Tensor of shape {str(data.shape)}'
     if isinstance(data, collections.abc.Mapping):
         return {format_data_to_json_serializable(k): format_data_to_json_serializable(v) for k, v in data.items()}
     if isinstance(data, collections.abc.Iterable):

@@ -43,5 +43,4 @@ def vit_small_patch16(num_classes: int = 1000,
         dropout=dropout,
         emb_dropout=embedding_dropout)
 
-    composer_model = ComposerClassifier(module=model)
-    return composer_model
+    return ComposerClassifier(module=model)

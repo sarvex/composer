@@ -420,19 +420,21 @@ def get_lm_trainer(hf_model,
                                      sampler=dist.get_sampler(train_dataset))
 
     in_memory_logger = InMemoryLogger()
-    trainer = Trainer(model=model,
-                      train_dataloader=train_dataloader,
-                      eval_dataloader=eval_dataloader,
-                      max_duration='1ep',
-                      save_folder=save_folder,
-                      save_interval='1ep',
-                      save_filename='hf-checkpoint.pt',
-                      load_path=load_path,
-                      fsdp_config=fsdp_config,
-                      loggers=in_memory_logger,
-                      device_train_microbatch_size=batch_size
-                      if device_train_microbatch_size is None else device_train_microbatch_size)
-    return trainer
+    return Trainer(
+        model=model,
+        train_dataloader=train_dataloader,
+        eval_dataloader=eval_dataloader,
+        max_duration='1ep',
+        save_folder=save_folder,
+        save_interval='1ep',
+        save_filename='hf-checkpoint.pt',
+        load_path=load_path,
+        fsdp_config=fsdp_config,
+        loggers=in_memory_logger,
+        device_train_microbatch_size=batch_size
+        if device_train_microbatch_size is None
+        else device_train_microbatch_size,
+    )
 
 
 def test_loss_vs_ce_metric(tiny_gpt2_tokenizer, tiny_gpt2_model):
@@ -828,7 +830,10 @@ def test_write_hf_from_composer(checkpoint_upload_folder, local_save_filename, t
     if str(checkpoint_upload_folder).startswith('s3://'):
         parsed_uri = urlparse(checkpoint_upload_folder)
         object_store = DummyObjectStore(Path(parsed_uri.netloc))
-        object_store.upload_object(parsed_uri.path + 'hf-checkpoint.pt', str(tmp_path / 'hf-checkpoint.pt'))
+        object_store.upload_object(
+            f'{parsed_uri.path}hf-checkpoint.pt',
+            str(tmp_path / 'hf-checkpoint.pt'),
+        )
 
     with patch('composer.utils.file_helpers.S3ObjectStore', DummyObjectStore):
         checkpoint_path = os.path.join(checkpoint_upload_folder, 'hf-checkpoint.pt')
@@ -954,12 +959,13 @@ def test_generate(device, world_size, hf_model, hf_tokenizer, use_fsdp):
             'GPT2 is not currently supported with DDP. See https://github.com/huggingface/transformers/issues/22482 for more details.'
         )
 
-    fsdp_config = None
-    if use_fsdp:
-        fsdp_config = {
+    fsdp_config = (
+        {
             'sharding_strategy': 'FULL_SHARD',
         }
-
+        if use_fsdp
+        else None
+    )
     hf_tokenizer = hf_tokenizer()
 
     model = HuggingFaceModel(hf_model, tokenizer=hf_tokenizer, use_logits=True)
@@ -1020,12 +1026,13 @@ def test_eval_forward_generate(device, world_size, hf_model, hf_tokenizer, use_f
             'GPT2 is not currently supported with DDP. See https://github.com/huggingface/transformers/issues/22482 for more details.'
         )
 
-    fsdp_config = None
-    if use_fsdp:
-        fsdp_config = {
+    fsdp_config = (
+        {
             'sharding_strategy': 'FULL_SHARD',
         }
-
+        if use_fsdp
+        else None
+    )
     hf_tokenizer = hf_tokenizer()
 
     model = HuggingFaceModel(hf_model, tokenizer=hf_tokenizer, use_logits=True)

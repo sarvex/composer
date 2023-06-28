@@ -73,7 +73,7 @@ class ConsoleLogger(LoggerDestination):
         if self.should_log_traces:
             for trace_name, trace in traces.items():
                 trace_str = format_log_data_value(trace)
-                self._log_to_console(f'[trace]: {trace_name}:' + trace_str + '\n')
+                self._log_to_console(f'[trace]: {trace_name}:{trace_str}' + '\n')
 
     def log_hyperparameters(self, hyperparameters: Dict[str, Any]):
         # Lazy logging of hyperparameters.
@@ -159,8 +159,7 @@ class ConsoleLogger(LoggerDestination):
         eval_batch = state.eval_timestamp.batch.value
         eval_dataloader_label = state.dataloader_label
         total_eval_batches = self._get_total_eval_batches(state)
-        curr_progress = f'[Eval batch={eval_batch}/{total_eval_batches}] Eval on {eval_dataloader_label} data'
-        return curr_progress
+        return f'[Eval batch={eval_batch}/{total_eval_batches}] Eval on {eval_dataloader_label} data'
 
     def _get_total_eval_batches(self, state: State) -> int:
         cur_evaluator = [evaluator for evaluator in state.evaluators if evaluator.label == state.dataloader_label][0]
@@ -172,7 +171,7 @@ class ConsoleLogger(LoggerDestination):
 
     def _get_progress_string(self, state: State):
         if state.max_duration is None:
-            training_progress = ''
+            return ''
         elif state.max_duration.unit == TimeUnit.EPOCH:
             cur_batch = int(state.timestamp.batch_in_epoch)
             cur_epoch = int(state.timestamp.epoch)
@@ -185,13 +184,12 @@ class ConsoleLogger(LoggerDestination):
                 total = int(state.dataloader_len)
                 curr_progress = f'[batch={cur_batch}/{total}]'
 
-            training_progress = f'[epoch={cur_epoch + 1}]{curr_progress}'
+            return f'[epoch={cur_epoch + 1}]{curr_progress}'
         else:
             unit = state.max_duration.unit
             curr_duration = int(state.timestamp.get(unit))
             total = state.max_duration.value
-            training_progress = f'[{unit.name.lower()}={curr_duration}/{total}]'
-        return training_progress
+            return f'[{unit.name.lower()}={curr_duration}/{total}]'
 
     def log_to_console(self, data: Dict[str, Any], state: State, prefix: str = '', is_train=True) -> None:
         # log to console
@@ -199,7 +197,7 @@ class ConsoleLogger(LoggerDestination):
             progress = self._get_progress_string(state)
         else:
             progress = self._get_eval_progress_string(state)
-        log_str = f'{progress}' + (':' if len(data) > 0 else '')
+        log_str = f'{progress}' + (':' if data else '')
         for data_name, data in data.items():
             data_str = format_log_data_value(data)
             log_str += f'\n\t {prefix}{data_name}: {data_str}'

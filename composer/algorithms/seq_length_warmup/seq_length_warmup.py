@@ -101,7 +101,7 @@ def set_batch_sequence_length(
             # eos_idx_truncated is the same thing, after truncation is applied
             eos_idx_truncated = eos_idx.clamp(max=curr_seq_len - 1)
 
-            for k in batch.keys():
+            for k in batch:
                 if batch[k].ndim < 2:
                     raise ValueError(
                         f'Sequence Length Warmup requires that all tensors are sequence-shaped when ``truncate=True``. '
@@ -111,7 +111,7 @@ def set_batch_sequence_length(
                 batch[k][r_idx, eos_idx_truncated] = eos_value
 
         else:
-            for k in batch.keys():
+            for k in batch:
                 if batch[k].ndim < 2:
                     raise ValueError(
                         f'Sequence Length Warmup requires that all tensors are sequence-shaped when ``truncate=True``. '

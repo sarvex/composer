@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 def apply_low_precision_groupnorm(model,
                                   precision: Optional[Precision] = None,
                                   optimizers: Optional[Union[Optimizer, Sequence[Optimizer]]] = None):
-    if (precision != Precision.AMP_FP16 and precision != Precision.AMP_BF16):
+    if precision not in [Precision.AMP_FP16, Precision.AMP_BF16]:
         warnings.warn(NoEffectWarning('Low Precision GroupNorm only applies to AMP_FP16 and AMP_BF16 precisions.'))
         return model
 

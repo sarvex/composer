@@ -13,13 +13,21 @@ from torch.nn.modules.utils import _pair
 
 
 def _default_2d_filter():
-    default_filter = torch.tensor([[[
-        [1, 2, 1],
-        [2, 4, 2],
-        [1, 2, 1],
-    ]]]) * 1 / 16.0
-
-    return default_filter
+    return (
+        torch.tensor(
+            [
+                [
+                    [
+                        [1, 2, 1],
+                        [2, 4, 2],
+                        [1, 2, 1],
+                    ]
+                ]
+            ]
+        )
+        * 1
+        / 16.0
+    )
 
 
 def _padding_for_filt_2d_same(filt: torch.Tensor):

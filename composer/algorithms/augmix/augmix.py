@@ -70,7 +70,7 @@ def augmix_image(img: ImgT,
     """
 
     def _augmix_pil_image(img_pil: PillowImage, severity: int, depth: int, width: int, alpha: float,
-                          augmentation_set: List) -> PillowImage:
+                              augmentation_set: List) -> PillowImage:
         chain_weights = np.random.dirichlet([alpha] * width).astype(np.float32)
         mixing_weight = np.float32(np.random.beta(alpha, alpha))
         augmented_combination = np.zeros_like(img_pil, dtype=np.float32)
@@ -79,10 +79,7 @@ def augmix_image(img: ImgT,
         for chain_i in range(width):
             augmented_image = img_pil.copy()
             # Determine depth of current augmentation chain
-            if depth > 0:
-                d = depth
-            else:
-                d = np.random.randint(1, 4)
+            d = depth if depth > 0 else np.random.randint(1, 4)
             # Iterate through chain depth
             for _ in range(d):
                 aug = np.random.choice(augmentation_set)
