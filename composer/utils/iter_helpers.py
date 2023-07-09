@@ -59,9 +59,7 @@ def ensure_tuple(x):
         return (x,)
     if isinstance(x, collections.abc.Sequence):
         return tuple(x)
-    if isinstance(x, dict):
-        return tuple(x.values())
-    return (x,)
+    return tuple(x.values()) if isinstance(x, dict) else (x, )
 
 
 class IteratorFileStream(io.RawIOBase):
@@ -84,10 +82,7 @@ class IteratorFileStream(io.RawIOBase):
     def readinto(self, b):
         try:
             l = len(b)  # max bytes to read
-            if self.leftover:
-                chunk = self.leftover
-            else:
-                chunk = next(self.iterator)
+            chunk = self.leftover if self.leftover else next(self.iterator)
             output, self.leftover = chunk[:l], chunk[l:]
             b[:len(output)] = output
             return len(output)

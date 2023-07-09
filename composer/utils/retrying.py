@@ -88,14 +88,14 @@ def retry(  # type: ignore
                 except exc_class as e:
                     if i + 1 == num_attempts:
                         raise e
-                    else:
-                        time.sleep(initial_backoff * 2**i + random.random() * max_jitter)
-                        i += 1
+                    time.sleep(initial_backoff * 2**i + random.random() * max_jitter)
+                    i += 1
 
         return cast(TCallable, new_func)
 
-    if not isinstance(exc_class, collections.abc.Sequence) and not (isinstance(exc_class, type) and
-                                                                    issubclass(exc_class, Exception)):
+    if not isinstance(exc_class, collections.abc.Sequence) and (
+        not isinstance(exc_class, type) or not issubclass(exc_class, Exception)
+    ):
         # Using the decorator without (), like @retry_with_backoff
         func = cast(TCallable, exc_class)
         exc_class = Exception

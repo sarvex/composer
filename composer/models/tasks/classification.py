@@ -102,11 +102,7 @@ class ComposerClassifier(ComposerModel):
         return self._loss_fn(outputs, targets, *args, **kwargs)
 
     def get_metrics(self, is_train: bool = False) -> Dict[str, Metric]:
-        if is_train:
-            metrics = self.train_metrics
-        else:
-            metrics = self.val_metrics
-
+        metrics = self.train_metrics if is_train else self.val_metrics
         if isinstance(metrics, Metric):
             metrics_dict = {metrics.__class__.__name__: metrics}
         else:
@@ -123,5 +119,4 @@ class ComposerClassifier(ComposerModel):
 
     def forward(self, batch: Tuple[Tensor, Any]) -> Tensor:
         inputs, _ = batch
-        outputs = self.module(inputs)
-        return outputs
+        return self.module(inputs)

@@ -38,7 +38,6 @@ class Algorithm(Serializable, ABC):
 
     def __init__(self, *args, **kwargs):  # Stub signature for PyRight
         del args, kwargs  # unused
-        pass
 
     @property
     def find_unused_parameters(self) -> bool:

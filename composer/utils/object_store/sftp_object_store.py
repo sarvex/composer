@@ -144,13 +144,9 @@ class SFTPObjectStore(ObjectStore):
         if port:
             netloc += f':{port}'
 
-        self._base_uri = urllib.parse.urlunsplit((
-            'sftp',  # scheme
-            netloc,  # netloc
-            '/' + cwd,  # path
-            None,  # query
-            None,  # fragment
-        ))
+        self._base_uri = urllib.parse.urlunsplit(
+            ('sftp', netloc, f'/{cwd}', None, None)
+        )
         self.ssh_client = SSHClient()
         if known_hosts_filename is not None:
             known_hosts_filename = str(known_hosts_filename)
@@ -239,24 +235,21 @@ class SFTPObjectStore(ObjectStore):
         callback: Optional[Callable[[int, int], None]] = None,
     ) -> None:
         object_name = os.path.join(self.cwd, object_name)
-        dirname = os.path.dirname(filename)
-        if dirname:
+        if dirname := os.path.dirname(filename):
             os.makedirs(dirname, exist_ok=True)
 
         if os.path.exists(filename) and not overwrite:
             raise FileExistsError(f'The file at {filename} already exists')
 
-        tmp_path = str(filename) + f'.{uuid.uuid4()}.tmp'
+        tmp_path = f'{str(filename)}.{uuid.uuid4()}.tmp'
 
         try:
             with self._handle_transient_errors():
                 self.sftp_client.get(remotepath=object_name, localpath=tmp_path, callback=callback)
         except Exception:
             # Make a best effort attempt to clean up the temporary file
-            try:
+            with contextlib.suppress(OSError):
                 os.remove(tmp_path)
-            except OSError:
-                pass
             raise
         else:
             if overwrite:

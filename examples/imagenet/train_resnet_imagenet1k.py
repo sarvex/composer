@@ -169,7 +169,7 @@ def _main():
 
     # Specify model initialization
     def weight_init(w: torch.nn.Module):
-        if isinstance(w, torch.nn.Linear) or isinstance(w, torch.nn.Conv2d):
+        if isinstance(w, (torch.nn.Linear, torch.nn.Conv2d)):
             torch.nn.init.kaiming_normal_(w.weight)
         if isinstance(w, torch.nn.BatchNorm2d):
             w.weight.data = torch.rand(w.weight.data.shape)

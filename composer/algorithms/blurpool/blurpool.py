@@ -108,7 +108,7 @@ class BlurPool(Algorithm):
         self.blur_first = blur_first
         self.min_channels = min_channels
 
-        if self.replace_maxpools is False and self.replace_convs is False:
+        if not self.replace_maxpools and not self.replace_convs:
             raise ValueError(
                 'Both replace_maxpool and replace_convs are set to False. BlurPool will not be modifying the model.')
 

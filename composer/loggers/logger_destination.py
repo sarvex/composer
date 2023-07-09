@@ -54,7 +54,6 @@ class LoggerDestination(Callback, ABC):
                 (strings) to their values (Any).
         """
         del hyperparameters  # unused
-        pass
 
     def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
         """Log metrics or parameters that vary during training.
@@ -68,7 +67,6 @@ class LoggerDestination(Callback, ABC):
                 counter).
         """
         del metrics, step  # unused
-        pass
 
     def log_traces(self, traces: Dict[str, Any]):
         """Log traces. Logs any debug-related data like algorithm traces.
@@ -78,7 +76,6 @@ class LoggerDestination(Callback, ABC):
                 (Any).
         """
         del traces
-        pass
 
     def log_images(
         self,
@@ -110,7 +107,6 @@ class LoggerDestination(Callback, ABC):
                 with WandB.
         """
         del images, name, channels_last, step, masks, mask_class_labels, use_table
-        pass
 
     def upload_file(
         self,
@@ -148,7 +144,6 @@ class LoggerDestination(Callback, ABC):
                 (default: ``False``)
         """
         del state, remote_file_name, file_path, overwrite  # unused
-        pass
 
     def download_file(
         self,

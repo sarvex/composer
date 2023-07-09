@@ -138,9 +138,9 @@ class SWA(Algorithm):
             raise ValueError('anneal_steps must be greater than 0')
 
         # Check annealing_strategy string
-        if self.anneal_strategy.lower() in ['linear', 'lin']:
+        if self.anneal_strategy.lower() in {'linear', 'lin'}:
             self.anneal_strategy = 'linear'
-        elif self.anneal_strategy.lower() in ['cos', 'cosine']:
+        elif self.anneal_strategy.lower() in {'cos', 'cosine'}:
             self.anneal_strategy = 'cos'
         else:
             raise ValueError("anneal_strategy must be one of {'linear', 'cos'}.")
@@ -192,7 +192,7 @@ class SWA(Algorithm):
 
     def _get_last_lr(self, schedulers: List[PyTorchScheduler]):
         """ retrieves the last lr from current schedulers. """
-        if len(schedulers) == 0:
+        if not schedulers:
             return 1.0
         if len(schedulers) != 1:
             raise RuntimeError(f'SWA supports only one scheduler, got {len(schedulers)}')

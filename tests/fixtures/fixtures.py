@@ -95,7 +95,7 @@ def empty_logger(minimal_state: State) -> Logger:
 def test_session_name(configure_dist: None) -> str:
     """Generate a random name for the test session that is the same on all ranks."""
     del configure_dist  # unused
-    generated_session_name = str(int(time.time())) + '-' + coolname.generate_slug(2)
+    generated_session_name = f'{int(time.time())}-{coolname.generate_slug(2)}'
     name_list = [generated_session_name]
     # ensure all ranks have the same name
     dist.broadcast_object_list(name_list)
@@ -264,8 +264,9 @@ def _session_tiny_t5_config():  # type: ignore
 def tiny_t5_tokenizer_helper():
     transformers = pytest.importorskip('transformers')
 
-    hf_tokenizer = transformers.AutoTokenizer.from_pretrained('t5-small', model_max_length=512)
-    return hf_tokenizer
+    return transformers.AutoTokenizer.from_pretrained(
+        't5-small', model_max_length=512
+    )
 
 
 @pytest.fixture(scope='session')

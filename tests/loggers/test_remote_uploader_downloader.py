@@ -28,11 +28,11 @@ class DummyObjectStore(ObjectStore):
         os.makedirs(self.dir, exist_ok=True)
 
     def get_uri(self, object_name: str) -> str:
-        return 'local://' + object_name
+        return f'local://{object_name}'
 
     def _get_abs_path(self, object_name: str):
         assert isinstance(self.dir, str)
-        return os.path.abspath(self.dir + '/' + object_name)
+        return os.path.abspath(f'{self.dir}/{object_name}')
 
     def upload_object(
         self,
@@ -57,8 +57,7 @@ class DummyObjectStore(ObjectStore):
         return shutil.copy2(self._get_abs_path(object_name), filename)
 
     def get_object_size(self, object_name: str) -> int:
-        size = os.stat(self._get_abs_path(object_name)).st_size
-        return size
+        return os.stat(self._get_abs_path(object_name)).st_size
 
 
 def object_store_test_helper(
@@ -92,21 +91,18 @@ def object_store_test_helper(
 
             remote_uploader_downloader.run_event(Event.INIT, dummy_state, logger)
 
-            file_path = os.path.join(tmp_path, f'file')
+            file_path = os.path.join(tmp_path, 'file')
             with open(file_path, 'w+') as f:
                 f.write('1')
             logger.upload_file(remote_file_name, file_path, overwrite=overwrite)
 
-            file_path_2 = os.path.join(tmp_path, f'file_2')
+            file_path_2 = os.path.join(tmp_path, 'file_2')
             with open(file_path_2, 'w+') as f:
                 f.write('2')
 
             post_close_ctx = contextlib.nullcontext()
 
             if not overwrite:
-                # If not `overwrite_delay`, then the `logger.upload_file` will raise a FileExistsException, because the upload will not even be enqueued
-                # Otherwise, with a sufficient will be uploaded, and cleared from the queue, causing a runtime error to be raised on Event.BATCH_END or Event.EPOCH_END
-                # A 2 second sleep should be enough here -- the DummyObjectStore will block for at most 0.5 seconds, and the RemoteUploaderDownloader polls every 0.1 seconds
                 if overwrite_delay:
                     post_close_ctx = pytest.warns(
                         RuntimeWarning,
@@ -154,7 +150,7 @@ def object_store_test_helper(
                 assert f.read() == '1' if not overwrite else '2'
 
             # now assert that we have a dummy file in the remote folder
-            remote_file = os.path.join(str(remote_dir), remote_file_name)
+            remote_file = os.path.join(remote_dir, remote_file_name)
             # Verify file contains the correct value
             with open(remote_file, 'r') as f:
                 assert f.read() == '1' if not overwrite else '2'

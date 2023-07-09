@@ -51,7 +51,6 @@ class TraceHandler(Callback, abc.ABC):
             wall_clock_time_ns (int): The :py:func:`time.time_ns` corresponding to the event.
         """
         del name, categories, is_start, timestamp, wall_clock_time_ns  # unused
-        pass
 
     def process_instant_event(
         self,
@@ -69,7 +68,6 @@ class TraceHandler(Callback, abc.ABC):
             wall_clock_time_ns (int): The :py:func:`time.time_ns` corresponding to the event.
         """
         del name, categories, timestamp, wall_clock_time_ns  # unused
-        pass
 
     def process_counter_event(
         self,
@@ -89,7 +87,6 @@ class TraceHandler(Callback, abc.ABC):
             values (Dict[str, int | float]): The values corresponding to this counter event.
         """
         del name, categories, timestamp, wall_clock_time_ns, values  # unused
-        pass
 
     def process_chrome_json_trace_file(self, filepath: pathlib.Path) -> None:
         """Invoked when there are events in Chrome JSON format to record.
@@ -101,4 +98,3 @@ class TraceHandler(Callback, abc.ABC):
             filepath (pathlib.Path): The filepath to a Chrome JSON trace file.
         """
         del filepath  # unused
-        pass

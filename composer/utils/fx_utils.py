@@ -188,8 +188,7 @@ def _get_residual_modules(gm: GraphModule, node: Node) -> Tuple[Optional[GraphMo
     node.op is assumed to be a call_module
     """
     pattern = re.compile(r'non_res_(\d+)|residual_(\d+)')
-    matches = pattern.match(str(node.target))
-    if matches:
+    if matches := pattern.match(str(node.target)):
         idx = int(matches[1]) if matches[1] else int(matches[2])
         main_submod = getattr(gm, f'non_res_{idx}')
         residual_submod = getattr(gm, f'residual_{idx}', None)
@@ -207,9 +206,7 @@ def _replace_residual_pattern(gm: GraphModule,
     ``replacement_module`` is already added to the gm.
     """
     insert_node = original_node.prev
-    add_node = original_node.next
-    if has_residual_ops:
-        add_node = original_node.next.next
+    add_node = original_node.next.next if has_residual_ops else original_node.next
     with gm.graph.inserting_after(insert_node):
         new_node = gm.graph.call_module(replacement_module, args=(insert_node,))  # type: ignore
         add_node.replace_all_uses_with(new_node)
@@ -319,14 +316,12 @@ def fuse_parallel_linears(gm: GraphModule, keep_weights: bool = False) -> GraphM
     all_modules: Dict[str, nn.Module] = dict(gm.named_modules())
     fused_count = 0
     for node in gm.graph.nodes:
-        # There could be more than two parallel linears
-        linears_to_fuse = []
-
-        # Check all the users of current node and collect all linear layers
-        for user in list(node.users):
-            if user.op == 'call_module' and isinstance(all_modules[user.target], nn.Linear):
-                linears_to_fuse.append(user)
-
+        linears_to_fuse = [
+            user
+            for user in list(node.users)
+            if user.op == 'call_module'
+            and isinstance(all_modules[user.target], nn.Linear)
+        ]
         # Fuse if there are more than 1 parallel linear layers
         if len(linears_to_fuse) > 1 and _can_linears_be_fused(linears_to_fuse, all_modules):
             lin, out_features = _create_fused_linear(linears_to_fuse, all_modules, keep_weights)

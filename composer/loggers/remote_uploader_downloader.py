@@ -348,16 +348,11 @@ class RemoteUploaderDownloader(LoggerDestination):
         return all(worker.is_alive() for worker in self._workers)
 
     def _check_workers(self):
-        # Periodically check to see if any of the upload workers crashed
-        # They would crash if:
-        #   a) A file could not be uploaded, and the retry counter failed, or
-        #   b) allow_overwrite=False, but the file already exists,
         if not self._all_workers_alive:
-            if not self._exception_queue.empty():
-                exception = self._exception_queue.get_nowait()
-                raise exception
-            else:
+            if self._exception_queue.empty():
                 raise RuntimeError('Upload worker crashed. Please check the logs.')
+            exception = self._exception_queue.get_nowait()
+            raise exception
 
     def upload_file(
         self,
@@ -415,16 +410,14 @@ class RemoteUploaderDownloader(LoggerDestination):
                 # Shutdown if the enqueue thread flag is set, which means that no more objects will be added to
                 # self._logged_objects
                 if self._enqueue_thread_flag.is_set():
-                    if self._all_workers_alive:
-                        if len(self._logged_objects) == 0:
-                            # If finished (i.e. no more objects to be added to self._logged_objects) and all logged objects are
-                            # enqueued, then break
-                            break
-                    else:
-                        # If any worker died, then it's impossible to recover since the file was already popped off of the queue,
-                        # so break. Some files may not be uploaded.
+                    if (
+                        self._all_workers_alive
+                        and len(self._logged_objects) == 0
+                        or not self._all_workers_alive
+                    ):
+                        # If finished (i.e. no more objects to be added to self._logged_objects) and all logged objects are
+                        # enqueued, then break
                         break
-
             time.sleep(0.2)  # Yield lock for `self.upload_file`
 
     def download_file(

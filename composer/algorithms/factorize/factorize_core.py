@@ -66,11 +66,7 @@ def _nmse(Y: torch.Tensor, Y_hat: torch.Tensor) -> float:
 
 
 def _svd_initialize(Wa: torch.Tensor, Wb: Optional[torch.Tensor], k: int) -> Tuple[torch.Tensor, torch.Tensor]:
-    if Wb is None:
-        W = Wa
-    else:
-        W = Wa @ Wb
-
+    W = Wa if Wb is None else Wa @ Wb
     # TODO rank k randomized svd if k small enough
     U, s, Vt = torch.linalg.svd(W, full_matrices=False)
     Wa = U[:, :k]

@@ -188,7 +188,7 @@ class ProgressiveResizing(Algorithm):
         if not (0 <= finetune_fraction <= 1):
             raise ValueError(f'finetune_fraction must be between 0 and 1: {finetune_fraction}')
 
-        if not (delay_fraction + finetune_fraction <= 1):
+        if delay_fraction + finetune_fraction > 1:
             raise ValueError(
                 f'delay_fraction + finetune_fraction must be less than 1: {delay_fraction + finetune_fraction}')
 
@@ -248,12 +248,13 @@ def _make_crop(tensor: torch.Tensor, scale_factor: float) -> T_ResizeTransform:
     Wc = int(scale_factor * tensor.shape[3])
     top = torch.randint(tensor.shape[2] - Hc, size=(1,))
     left = torch.randint(tensor.shape[3] - Wc, size=(1,))
-    resize_transform = partial(torchvision.transforms.functional.crop,
-                               top=int(top),
-                               left=int(left),
-                               height=Hc,
-                               width=Wc)
-    return resize_transform
+    return partial(
+        torchvision.transforms.functional.crop,
+        top=int(top),
+        left=int(left),
+        height=Hc,
+        width=Wc,
+    )
 
 
 def _make_crop_pair(
@@ -287,5 +288,9 @@ def _make_crop_pair(
 
 def _make_resize(scale_factor: float) -> T_ResizeTransform:
     """Makes a nearest-neighbor interpolation transform at the specified scale factor."""
-    resize_transform = partial(F.interpolate, scale_factor=scale_factor, mode='nearest', recompute_scale_factor=False)
-    return resize_transform
+    return partial(
+        F.interpolate,
+        scale_factor=scale_factor,
+        mode='nearest',
+        recompute_scale_factor=False,
+    )

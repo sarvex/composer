@@ -64,9 +64,7 @@ def test_threshold_stopper_eval(metric_sequence: List[float], unit: TimeUnit, de
 
     trainer.fit()
 
-    count_before_threshold = 0
-    for metric in metric_sequence:
-        if metric_threshold > metric:
-            count_before_threshold += 1
-
+    count_before_threshold = sum(
+        1 for metric in metric_sequence if metric_threshold > metric
+    )
     assert trainer.state.timestamp.get(unit).value == count_before_threshold

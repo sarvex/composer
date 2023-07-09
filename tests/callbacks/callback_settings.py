@@ -35,12 +35,8 @@ try:
     _COMETML_INSTALLED = True
     os.environ['COMET_API_KEY']
     del comet_ml  # unused
-except ImportError:
+except (ImportError, KeyError):
     _COMETML_INSTALLED = False
-# If COMET_API_KEY not set.
-except KeyError:
-    _COMETML_INSTALLED = False
-
 try:
     import mlperf_logging
     _MLPERF_INSTALLED = True
@@ -135,9 +131,8 @@ def get_cb_kwargs(impl: Type[Callback]):
 def _to_pytest_param(impl):
     if impl not in _callback_marks:
         return pytest.param(impl)
-    else:
-        marks = _callback_marks[impl]
-        return pytest.param(impl, marks=marks)
+    marks = _callback_marks[impl]
+    return pytest.param(impl, marks=marks)
 
 
 def get_cbs_and_marks(callbacks: bool = False, loggers: bool = False, profilers: bool = False):
@@ -189,5 +184,4 @@ def get_cb_hparams_and_marks():
     """
     # TODO: (Hanlin) populate this
     implementations = []
-    ans = [_to_pytest_param(impl) for impl in implementations]
-    return ans
+    return [_to_pytest_param(impl) for impl in implementations]

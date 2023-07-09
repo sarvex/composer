@@ -13,11 +13,9 @@ from tests.common import SimpleConvModel
 
 
 def _count_parametrize(module: torch.nn.Module):
-    count = 0
-    for m in module.modules():
-        if parametrize.is_parametrized(m, 'weight'):
-            count += 1
-    return count
+    return sum(
+        1 for m in module.modules() if parametrize.is_parametrized(m, 'weight')
+    )
 
 
 def test_ws_calculation():

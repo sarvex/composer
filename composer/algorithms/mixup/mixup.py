@@ -74,10 +74,7 @@ def mixup_batch(input: torch.Tensor,
         mixing = _gen_mixing_coef(alpha)
     # Create permuted versions of x and y in preparation for interpolation
     # Use given indices if there are any.
-    if indices is None:
-        permuted_idx = _gen_indices(input.shape[0])
-    else:
-        permuted_idx = indices
+    permuted_idx = _gen_indices(input.shape[0]) if indices is None else indices
     x_permuted = input[permuted_idx]
     permuted_target = target[permuted_idx]
     # Interpolate between the inputs
@@ -214,10 +211,7 @@ def _gen_mixing_coef(alpha: float) -> float:
     # Draw the mixing parameter from a beta distribution.
     # Check here is needed because beta distribution requires alpha > 0
     # but alpha = 0 is fine for mixup.
-    if alpha == 0:
-        mixing_lambda = 0
-    else:
-        mixing_lambda = np.random.beta(alpha, alpha)
+    mixing_lambda = 0 if alpha == 0 else np.random.beta(alpha, alpha)
     # for symmetric beta distribution, can always use 0 <= lambda <= .5;
     # this way the "main" label is always the original one, which keeps
     # the training accuracy meaningful

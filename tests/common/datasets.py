@@ -116,10 +116,7 @@ class RandomImageDataset(VisionDataset):
             x = (x * (255 / x.max())).astype('uint8')
             x = Image.fromarray(x)
 
-        if self.transform is not None:
-            return self.transform(x), y
-        else:
-            return x, y
+        return (self.transform(x), y) if self.transform is not None else (x, y)
 
 
 class RandomSegmentationDataset(VisionDataset):
@@ -164,10 +161,7 @@ class RandomSegmentationDataset(VisionDataset):
             x = (x * (255 / x.max())).astype('uint8')
             x = Image.fromarray(x)
 
-        if self.transform is not None:
-            return self.transform(x), y
-        else:
-            return x, y
+        return (self.transform(x), y) if self.transform is not None else (x, y)
 
 
 class RandomTextClassificationDataset(Dataset):
@@ -214,10 +208,7 @@ class RandomTextClassificationDataset(Dataset):
         x = self.x[index]
         y = self.y[index]
 
-        if self.use_keys:
-            return {'input_ids': x, 'labels': y}
-        else:
-            return x, y
+        return {'input_ids': x, 'labels': y} if self.use_keys else (x, y)
 
 
 class RandomTextRegressionDataset(Dataset):
@@ -256,10 +247,7 @@ class RandomTextRegressionDataset(Dataset):
 
         x = self.x[index]
         y = self.y[index]
-        if self.use_keys:
-            return {'input_ids': x, 'labels': y}
-        else:
-            return x, y
+        return {'input_ids': x, 'labels': y} if self.use_keys else (x, y)
 
 
 class RandomTextLMDataset(Dataset):
@@ -314,15 +302,14 @@ class RandomTextLMDataset(Dataset):
 
         x = self.x[index]
 
-        if self.use_keys:
-            output = {'input_ids': x}
-            if self.use_token_type_ids:
-                output['token_type_ids'] = torch.zeros_like(x)
-            if self.y is not None:
-                output['labels'] = self.y[index]
-            return output
-        else:
+        if not self.use_keys:
             return x if self.y is None else (x, self.y[index])
+        output = {'input_ids': x}
+        if self.use_token_type_ids:
+            output['token_type_ids'] = torch.zeros_like(x)
+        if self.y is not None:
+            output['labels'] = self.y[index]
+        return output
 
 
 class SimpleDataset(Dataset):
@@ -374,8 +361,7 @@ def dummy_tiny_bert_classification_batch(num_classes=2):
                                                     use_keys=True)
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, sampler=dist.get_sampler(train_dataset))
-    batch = next(iter(train_dataloader))
-    return batch
+    return next(iter(train_dataloader))
 
 
 def dummy_tiny_bert_lm_batch():
@@ -390,8 +376,7 @@ def dummy_tiny_bert_lm_batch():
                                         use_keys=True)
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, sampler=dist.get_sampler(train_dataset))
-    batch = next(iter(train_dataloader))
-    return batch
+    return next(iter(train_dataloader))
 
 
 def dummy_hf_lm_dataloader(size: int, vocab_size: int, sequence_length: int, collate_fn=None):
@@ -399,8 +384,12 @@ def dummy_hf_lm_dataloader(size: int, vocab_size: int, sequence_length: int, col
 
     dataset = RandomTextLMDataset(size=size, vocab_size=vocab_size, sequence_length=sequence_length, use_keys=True)
 
-    dataloader = DataLoader(dataset, batch_size=batch_size, sampler=dist.get_sampler(dataset), collate_fn=collate_fn)
-    return dataloader
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        sampler=dist.get_sampler(dataset),
+        collate_fn=collate_fn,
+    )
 
 
 def dummy_bert_lm_dataloader(sequence_length=4, size=4):
@@ -421,5 +410,4 @@ def dummy_gpt_lm_dataloader(sequence_length=4, size=4):
 
 def dummy_text_classification_dataloader():
     dataset = RandomTextClassificationDataset(size=8)
-    dataloader = DataLoader(dataset, batch_size=4, sampler=dist.get_sampler(dataset))
-    return dataloader
+    return DataLoader(dataset, batch_size=4, sampler=dist.get_sampler(dataset))

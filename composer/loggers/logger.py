@@ -138,10 +138,7 @@ class Logger:
         Returns:
             bool: Whether any of the destinations support uploading files.
         """
-        for destination in self.destinations:
-            if destination.can_upload_files():
-                return True
-        return False
+        return any(destination.can_upload_files() for destination in self.destinations)
 
 
 def format_log_data_value(data: Any) -> str:
@@ -164,7 +161,7 @@ def format_log_data_value(data: Any) -> str:
     if isinstance(data, torch.Tensor):
         if data.shape == () or reduce(operator.mul, data.shape, 1) == 1:
             return format_log_data_value(data.cpu().item())
-        return 'Tensor of shape ' + str(data.shape)
+        return f'Tensor of shape {str(data.shape)}'
     if isinstance(data, collections.abc.Mapping):
         output = ['{ ']
         for k, v in data.items():

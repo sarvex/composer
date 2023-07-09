@@ -47,5 +47,4 @@ def composer_resnet_cifar(model_name: str,
     else:
         model = ResNetCIFAR.get_model_from_name(model_name, initializers, num_classes)
 
-    composer_model = ComposerClassifier(module=model, num_classes=num_classes)
-    return composer_model
+    return ComposerClassifier(module=model, num_classes=num_classes)

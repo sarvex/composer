@@ -28,13 +28,13 @@ def test_fewshot_sample_idxs():
     rng = random.Random(1234)
 
     fewshot_idxs = _get_fewshot_sample_idxs(dataset_size=5, num_fewshot=4, sample_idx=4, rng=rng)
-    assert fewshot_idxs == set([0, 1, 2, 3])
+    assert fewshot_idxs == {0, 1, 2, 3}
 
     fewshot_idxs = _get_fewshot_sample_idxs(dataset_size=5, num_fewshot=5, sample_idx=4, rng=rng)
-    assert fewshot_idxs == set([0, 1, 2, 3])
+    assert fewshot_idxs == {0, 1, 2, 3}
 
     fewshot_idxs = _get_fewshot_sample_idxs(dataset_size=5, num_fewshot=500, sample_idx=4, rng=rng)
-    assert fewshot_idxs == set([0, 1, 2, 3])
+    assert fewshot_idxs == {0, 1, 2, 3}
 
     fewshot_idxs = _get_fewshot_sample_idxs(dataset_size=10, num_fewshot=7, sample_idx=4, rng=rng)
     assert len(fewshot_idxs) == 7 and 4 not in fewshot_idxs
@@ -168,7 +168,7 @@ def test_lm_task_dataloader_extra_space(dataset_uri, tiny_gpt2_tokenizer, tmp_pa
     assert batch['mode'] == 'icl_task'
     min_idx = min(batch['continuation_indices'][0]).item()
     max_idx = max(batch['continuation_indices'][0]).item()
-    assert '  ' not in tokenizer.decode(batch['input_ids'][0][0:max_idx + 1])
+    assert '  ' not in tokenizer.decode(batch['input_ids'][0][:max_idx + 1])
     assert tokenizer.decode(batch['input_ids'][0][min_idx:max_idx + 1]) == ' yes'
 
 
@@ -298,9 +298,10 @@ def test_schema_task_dataloader_sentpiece_tokenizer(dataset_uri, tmp_path):
         batch['choice_groupings']) == batch_size // choices_per_question
 
     max_idx = max(batch['continuation_indices'][0]).item()
-    assert tokenizer.decode(
-        batch['input_ids'][0][0:max_idx + 1]
-    ) == "<s>Paul tried to call George on the phone, but George wasn't available. \nThe city councilmen refused the demonstrators a permit because the city councilmen feared violence."
+    assert (
+        tokenizer.decode(batch['input_ids'][0][: max_idx + 1])
+        == "<s>Paul tried to call George on the phone, but George wasn't available. \nThe city councilmen refused the demonstrators a permit because the city councilmen feared violence."
+    )
 
 
 @pytest.mark.parametrize('dataset_uri', ['lambada_small.jsonl'])
@@ -340,8 +341,8 @@ def test_lm_task_dataloader_opt_tokenizer(dataset_uri, num_fewshot, tmp_path):
     min_idx = min(batch['continuation_indices'][0]).item()
     max_idx = max(batch['continuation_indices'][0]).item()
     assert tokenizer.decode(batch['input_ids'][0][min_idx:max_idx + 1]) == ' glen'
-    assert tokenizer.decode(batch['input_ids'][0][0:min_idx]).startswith('</s>')
-    assert tokenizer.decode(batch['input_ids'][0][0:min_idx]).count('</s>') == 1
+    assert tokenizer.decode(batch['input_ids'][0][:min_idx]).startswith('</s>')
+    assert tokenizer.decode(batch['input_ids'][0][:min_idx]).count('</s>') == 1
 
 
 @pytest.mark.parametrize('dataset_uri', ['piqa_small.jsonl'])
@@ -390,8 +391,8 @@ def test_mc_task_dataloader_opt_tokenizer(dataset_uri, num_fewshot, tmp_path):
     min_idx = min(batch['continuation_indices'][0]).item()
     max_idx = max(batch['continuation_indices'][0]).item()
     assert tokenizer.decode(batch['input_ids'][0][min_idx:max_idx + 1]) == ' Pour it onto a plate'
-    assert tokenizer.decode(batch['input_ids'][0][0:min_idx]).startswith('</s>')
-    assert tokenizer.decode(batch['input_ids'][0][0:min_idx]).count('</s>') == 1
+    assert tokenizer.decode(batch['input_ids'][0][:min_idx]).startswith('</s>')
+    assert tokenizer.decode(batch['input_ids'][0][:min_idx]).count('</s>') == 1
 
 
 @pytest.mark.parametrize('dataset_uri', ['piqa_small.jsonl'])
@@ -451,8 +452,15 @@ def test_mc_split_batch(dataset_uri, num_fewshot, tmp_path):
             assert tokenizer.decode(
                 microbatch['input_ids'][0][min_idx:max_idx +
                                            1]) == ' Weld the metal together to get it to stay firmly in place'
-        assert tokenizer.decode(microbatch['input_ids'][0][0:min_idx]).startswith('</s>')
-        assert tokenizer.decode(microbatch['input_ids'][0][0:min_idx]).count('</s>') == 1
+        assert tokenizer.decode(
+            microbatch['input_ids'][0][:min_idx]
+        ).startswith('</s>')
+        assert (
+            tokenizer.decode(microbatch['input_ids'][0][:min_idx]).count(
+                '</s>'
+            )
+            == 1
+        )
 
 
 @pytest.mark.parametrize('dataset_uri', ['triviaqa_small.jsonl'])
@@ -546,11 +554,11 @@ def test_qa_task_dataloader(dataset_uri, tiny_gpt2_tokenizer, tmp_path, num_fews
     assert all(item[0] == tokenizer.eos_token_id for item in batch['input_ids'])
 
     decoded_batch = tokenizer.batch_decode(batch['input_ids'])
-    assert all([item.count('Q: ') == num_fewshot + 1 for item in decoded_batch])
-    assert all([item.count('\nA:') == num_fewshot + 1 for item in decoded_batch])
+    assert all(item.count('Q: ') == num_fewshot + 1 for item in decoded_batch)
+    assert all(item.count('\nA:') == num_fewshot + 1 for item in decoded_batch)
 
     if len(prompt_string) > 0:
-        assert all([item.count('I am a prompt') == 1 for item in decoded_batch])
+        assert all(item.count('I am a prompt') == 1 for item in decoded_batch)
 
     assert batch['labels'] == [['David Seville'], ['Scorpio', 'Skorpio']]
 
@@ -715,7 +723,11 @@ def test_mc_task_evaluation_subcategories(device, world_size, dataset_uri, num_f
 
     assert isinstance(dls, dict)
     evaluators = [
-        Evaluator(label='mmlu/' + k, dataloader=dl, metric_names=['InContextLearningMultipleChoiceAccuracy'])
+        Evaluator(
+            label=f'mmlu/{k}',
+            dataloader=dl,
+            metric_names=['InContextLearningMultipleChoiceAccuracy'],
+        )
         for k, dl in dls.items()
     ]
 

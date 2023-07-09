@@ -58,8 +58,7 @@ def drop_connect(inputs: torch.Tensor, drop_connect_rate: float, training: bool)
         device=inputs.device,
     )
     rand_tensor.floor_()  # binarize
-    output = inputs.div(keep_prob) * rand_tensor
-    return output
+    return inputs.div(keep_prob) * rand_tensor
 
 
 class SqueezeExcite(nn.Module):

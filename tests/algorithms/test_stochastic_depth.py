@@ -36,13 +36,12 @@ def stochastic_method():
 
 
 def count_sd_forward(module: torch.nn.Module, target_block: Type[torch.nn.Module], count: int = 0):
-    if (len(list(module.children()))) == 0 and len(list(module.parameters())) > 0:
+    if not list(module.children()) and list(module.parameters()):
         return count
-    else:
-        for child in module.children():
-            if isinstance(child, target_block) and hasattr(child, 'drop_rate'):
-                count += 1
-            count = count_sd_forward(child, target_block, count)
+    for child in module.children():
+        if isinstance(child, target_block) and hasattr(child, 'drop_rate'):
+            count += 1
+        count = count_sd_forward(child, target_block, count)
     return count
 
 
@@ -144,13 +143,12 @@ class TestStochasticDepthDropRate:
     def get_drop_rate_list(self, module: torch.nn.Module, drop_rates: Optional[List] = None):
         if drop_rates is None:
             drop_rates = []
-        if (len(list(module.children())) == 0 and len(list(module.parameters())) > 0):
+        if not list(module.children()) and list(module.parameters()):
             return
-        else:
-            for _, child in module.named_children():
-                if hasattr(child, 'drop_rate'):
-                    drop_rates.append(child.drop_rate)
-                self.get_drop_rate_list(child, drop_rates)
+        for _, child in module.named_children():
+            if hasattr(child, 'drop_rate'):
+                drop_rates.append(child.drop_rate)
+            self.get_drop_rate_list(child, drop_rates)
 
     @pytest.mark.parametrize('step', [50, 100, 1000])
     @pytest.mark.parametrize('drop_rate', [0.0, 0.5, 1.0])

@@ -45,7 +45,7 @@ class UNet(nn.Module):
         self.n_class = n_class
         self.residual = residual
         self.negative_slope = negative_slope
-        self.norm = normalization_layer + f'norm{dimension}d'
+        self.norm = f'{normalization_layer}norm{dimension}d'
         self.filters = [min(2**(5 + i), 320 if dimension == 3 else 512) for i in range(len(strides))]
 
         down_block = ResidBlock if self.residual else ConvBlock

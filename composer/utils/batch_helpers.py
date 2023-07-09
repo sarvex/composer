@@ -124,12 +124,10 @@ def _batch_set(batch: Any, key: Any, value: Any) -> Any:
         batch[key]
         batch[key] = value
 
-    # The only acceptable TypeErrors are for an object that doesn't have a __setitem__ or a __getitem__,
-    # which is TypeError("... object does not support item assignment") and TypeError('.. object is not subscriptable')
     except TypeError as e:
-        if 'object does not support item assignment' in str(e) or 'object is not subscriptable' in str(e):
-            pass
-        else:  # Other type errors should be raised.
+        if 'object does not support item assignment' not in str(
+            e
+        ) and 'object is not subscriptable' not in str(e):
             raise e
     else:
         return batch
@@ -190,7 +188,7 @@ def _batch_set_tuple(batch: Any, key: Union[int, str], value: Any) -> Any:
 
 
 def _is_key_get_and_set_fn_pair(key):
-    if all([callable(key_element) for key_element in key]):
+    if all(callable(key_element) for key_element in key):
         if len(key) == 2:
             return True
         else:

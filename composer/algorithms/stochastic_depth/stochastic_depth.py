@@ -82,7 +82,6 @@ def apply_stochastic_depth(model: torch.nn.Module,
                                  stochastic_method=stochastic_method,
                                  drop_rate=drop_rate,
                                  drop_distribution=drop_distribution)
-    transforms = {}
     target_layer, stochastic_converter = _STOCHASTIC_LAYER_MAPPING[target_layer_name]
     module_count = module_surgery.count_module_instances(model, target_layer)
     stochastic_from_target_layer = functools.partial(stochastic_converter,
@@ -90,7 +89,7 @@ def apply_stochastic_depth(model: torch.nn.Module,
                                                      drop_distribution=drop_distribution,
                                                      module_count=module_count,
                                                      stochastic_method=stochastic_method)
-    transforms[target_layer] = stochastic_from_target_layer
+    transforms = {target_layer: stochastic_from_target_layer}
     module_surgery.replace_module_classes(model, policies=transforms)
 
 
@@ -231,7 +230,7 @@ def _validate_stochastic_hparams(target_layer_name: str,
                          f' not supported. Must be one of {list(_VALID_LAYER_DISTRIBUTIONS)}')
 
     if stochastic_method == 'sample' and Time.from_timestring(drop_warmup).value != 0:
-        raise ValueError(f'drop_warmup can not be used with "sample" stochastic_method')
+        raise ValueError('drop_warmup can not be used with "sample" stochastic_method')
 
 
 def _update_drop_rate(module: torch.nn.Module,

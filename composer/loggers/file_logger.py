@@ -156,9 +156,7 @@ class FileLogger(LoggerDestination):  # noqa: D101
         """The filename for the logfile."""
         if self._run_name is None:
             raise RuntimeError('The run name is not set. The engine should have been set on Event.INIT')
-        name = format_name_with_dist(self.filename_format, run_name=self._run_name)
-
-        return name
+        return format_name_with_dist(self.filename_format, run_name=self._run_name)
 
     @property
     def remote_file_name(self) -> str:
@@ -195,10 +193,7 @@ class FileLogger(LoggerDestination):  # noqa: D101
     def log_hyperparameters(self, hyperparameters: Dict[str, Any]):
         for hparam_name, hparam_value in hyperparameters.items():
             hparam_str = format_log_data_value(hparam_value)
-            self.write(
-                f'[hyperparameter]: ',
-                f'{hparam_name}: {hparam_str} \n',
-            )
+            self.write('[hyperparameter]: ', f'{hparam_name}: {hparam_str} \n')
 
     def init(self, state: State, logger: Logger) -> None:
         del logger  # unused
@@ -206,8 +201,7 @@ class FileLogger(LoggerDestination):  # noqa: D101
         self._run_name = state.run_name
         if self.file is not None:
             raise RuntimeError('The file logger is already initialized')
-        file_dirname = os.path.dirname(self.filename)
-        if file_dirname:
+        if file_dirname := os.path.dirname(self.filename):
             os.makedirs(file_dirname, exist_ok=True)
         mode = 'w+' if self.overwrite else 'x+'
         self.file = open(self.filename, mode, buffering=self.buffer_size)

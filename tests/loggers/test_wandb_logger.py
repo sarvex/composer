@@ -78,7 +78,11 @@ def test_wandb_log_image(test_wandb_logger):
 
     test_wandb_logger.post_close()
     img_dir = str(Path(test_wandb_logger.run_dir) / Path('media/images'))
-    imgs = [filename for filename in os.listdir(img_dir) if imghdr.what(img_dir + '/' + filename) == 'png']
+    imgs = [
+        filename
+        for filename in os.listdir(img_dir)
+        if imghdr.what(f'{img_dir}/{filename}') == 'png'
+    ]
     actual_num_images = len(imgs)
     assert actual_num_images == expected_num_images_total
 
@@ -144,14 +148,20 @@ def test_wandb_log_image_with_masks(test_wandb_logger):
     test_wandb_logger.post_close()
     img_dir = str(Path(test_wandb_logger.run_dir) / Path('media/images'))
     imgs = [
-        filename for filename in os.listdir(img_dir)
-        if not os.path.isdir(img_dir + '/' + filename) and imghdr.what(img_dir + '/' + filename) == 'png'
+        filename
+        for filename in os.listdir(img_dir)
+        if not os.path.isdir(f'{img_dir}/{filename}')
+        and imghdr.what(f'{img_dir}/{filename}') == 'png'
     ]
     actual_num_images = len(imgs)
     assert actual_num_images == expected_num_images_total
 
     mask_dir = str(Path(test_wandb_logger.run_dir) / Path('media/images/mask'))
-    masks = [filename for filename in os.listdir(mask_dir) if imghdr.what(mask_dir + '/' + filename) == 'png']
+    masks = [
+        filename
+        for filename in os.listdir(mask_dir)
+        if imghdr.what(f'{mask_dir}/{filename}') == 'png'
+    ]
     actual_num_masks = len(masks)
     assert actual_num_masks == expected_num_masks_total
 
@@ -175,7 +185,7 @@ def test_wandb_log_image_with_masks_and_table(images, masks, test_wandb_logger):
     image_count = 0
     for image_table_file in image_table_files:
         table_columns = json.load(open(image_table_file.absolute()))['data']
-        num_images = sum([1 for column in table_columns if column[0] == 'Image'])
+        num_images = sum(1 for column in table_columns if column[0] == 'Image')
         image_count += num_images
 
     assert image_count == expected_num_images
@@ -291,7 +301,7 @@ def test_wandb_artifacts(monkeypatch: MonkeyPatch, rank_zero_only: bool, tmp_pat
     wandb_logger.init(dummy_state, logger)
 
     # Distribute the artifact name from rank 0 to all ranks
-    wandb_artifact_name = 'test-wandb-artifact-' + str(uuid.uuid4())
+    wandb_artifact_name = f'test-wandb-artifact-{str(uuid.uuid4())}'
     wandb_artifact_name_list = [wandb_artifact_name]
     dist.broadcast_object_list(wandb_artifact_name_list)
     wandb_artifact_name = wandb_artifact_name_list[0]

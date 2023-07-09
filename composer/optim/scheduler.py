@@ -286,10 +286,7 @@ class ConstantScheduler(ComposerScheduler):
     def __call__(self, state: State, ssr: float = 1.0) -> float:
         t_max = _convert_time(self.t_max, state, ssr=ssr)
 
-        if state.timestamp < t_max:
-            return self.alpha
-
-        return 1.0
+        return self.alpha if state.timestamp < t_max else 1.0
 
 
 class LinearScheduler(ComposerScheduler):
@@ -335,9 +332,7 @@ class LinearScheduler(ComposerScheduler):
         current_time = state.timestamp.get(t_max.unit)
         frac_of_total = min(1.0, (current_time / t_max).value)
 
-        current_factor = self.alpha_i + frac_of_total * (self.alpha_f - self.alpha_i)
-
-        return current_factor
+        return self.alpha_i + frac_of_total * (self.alpha_f - self.alpha_i)
 
 
 class ExponentialScheduler(ComposerScheduler):
@@ -506,8 +501,7 @@ class PolynomialScheduler(ComposerScheduler):
         frac_of_total = (current_time / t_max).value
 
         coeff = (1 - frac_of_total)**self.power
-        current_factor = self.alpha_f + coeff * (1.0 - self.alpha_f)
-        return current_factor
+        return self.alpha_f + coeff * (1.0 - self.alpha_f)
 
 
 class MultiStepWithWarmupScheduler(ComposerScheduler):
@@ -694,9 +688,7 @@ class LinearWithWarmupScheduler(ComposerScheduler):
         frac_of_total = ((current_time - t_warmup) / (t_max - t_warmup)).value if (t_max > t_warmup) else 0.0
         frac_of_total = min(1.0, frac_of_total)
 
-        current_factor = self.alpha_i + frac_of_total * (self.alpha_f - self.alpha_i)
-
-        return current_factor
+        return self.alpha_i + frac_of_total * (self.alpha_f - self.alpha_i)
 
 
 class CosineAnnealingWithWarmupScheduler(ComposerScheduler):
@@ -833,5 +825,4 @@ class PolynomialWithWarmupScheduler(ComposerScheduler):
         frac_of_total = min(1.0, frac_of_total)
 
         coeff = (1 - frac_of_total)**self.power
-        current_factor = self.alpha_f + coeff * (1.0 - self.alpha_f)
-        return current_factor
+        return self.alpha_f + coeff * (1.0 - self.alpha_f)

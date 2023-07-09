@@ -121,9 +121,8 @@ class Time(Generic[TValue], Serializable):
         unit = TimeUnit(unit)
         if unit == TimeUnit.DURATION:
             value = cast(TValue, float(value))
-        else:
-            if not isinstance(value, int):
-                raise TypeError(f'value {value} is of type {type(value)}. Units {unit} require integer values.')
+        elif not isinstance(value, int):
+            raise TypeError(f'value {value} is of type {type(value)}. Units {unit} require integer values.')
         self._value, self._unit = value, TimeUnit(unit)
 
     @classmethod
@@ -234,9 +233,7 @@ class Time(Generic[TValue], Serializable):
         if isinstance(other, int):
             return Time(other, self.unit)
         if isinstance(other, str):
-            other_parsed = Time.from_timestring(other)
-            return other_parsed
-
+            return Time.from_timestring(other)
         raise TypeError(f'Cannot convert type {other} to {self.__class__.__name__}')
 
     def _cmp(self, other: Union[int, float, Time, str]) -> int:
@@ -320,7 +317,9 @@ class Time(Generic[TValue], Serializable):
             return Time(type(self.value)(self.value * other), self.unit)
         other = self._parse(other)
         if other.unit != TimeUnit.DURATION and self.unit != TimeUnit.DURATION:
-            raise RuntimeError(f'Multiplication is supported only if one of the units is Duration')
+            raise RuntimeError(
+                'Multiplication is supported only if one of the units is Duration'
+            )
         real_unit = self.unit if other.unit == TimeUnit.DURATION else other.unit
         real_type = float if real_unit == TimeUnit.DURATION else int
         return Time(real_type(self.value * other.value), real_unit)
@@ -572,9 +571,7 @@ class Timestamp(Serializable):
         if isinstance(other, Time):
             return other
         if isinstance(other, str):
-            other_parsed = Time.from_timestring(other)
-            return other_parsed
-
+            return Time.from_timestring(other)
         raise TypeError(f'Cannot convert type {other} to {self.__class__.__name__}')
 
     def __eq__(self, other: object):

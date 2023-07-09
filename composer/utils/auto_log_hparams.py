@@ -34,7 +34,7 @@ def _grab_hparams(obj) -> Any:
     # then parse hparams attribute (which is a dict) and name those sub-hyperparameters
     if hasattr(obj, 'local_hparams'):
         return {obj.__class__.__name__: obj.local_hparams}
-    elif isinstance(obj, List) or isinstance(obj, Tuple):
+    elif isinstance(obj, (List, Tuple)):
         return [_get_obj_repr(sub_obj) for sub_obj in obj]
     elif isinstance(obj, Dict):
         return {k: _get_obj_repr(sub_obj) for k, sub_obj in obj.items()}
@@ -52,7 +52,10 @@ def _get_obj_repr(obj: Any):
         obj if obj is None or it is a int, float, str, bool type. Otherwise
         returns obj.__class__.__name__.
     """
-    if any([isinstance(obj, type_) for type_ in [int, float, str, bool]]) or obj is None:
+    if (
+        any(isinstance(obj, type_) for type_ in [int, float, str, bool])
+        or obj is None
+    ):
         return obj
     else:
         return obj.__class__.__name__
@@ -72,11 +75,11 @@ def convert_nested_dict_to_flat_dict(nested_dict: Dict, prefix='') -> Dict:
     """
     flat_dict = {}
     for k, v in nested_dict.items():
-        key = prefix + '/' + k if prefix != '' else k
+        key = f'{prefix}/{k}' if prefix != '' else k
         # Recursively crawl sub-dictionary.
         if isinstance(v, dict):
             sub_flat_dict = convert_nested_dict_to_flat_dict(prefix=key, nested_dict=v)
-            flat_dict.update(sub_flat_dict)
+            flat_dict |= sub_flat_dict
         else:
             flat_dict[key] = v
     return flat_dict

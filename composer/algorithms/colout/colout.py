@@ -89,9 +89,7 @@ def colout_batch(sample: Union[ImgT, Tuple[ImgT, ImgT]],
         X_colout = X_colout.reshape(X_colout.shape[-3:])
     X_colout = image_as_type(X_colout, type(input))
 
-    resize_target = _should_resize_target(sample, resize_target)
-
-    if resize_target:
+    if resize_target := _should_resize_target(sample, resize_target):
         target = sample[1]
         Y_tensor = image_as_type(target, torch.Tensor)
         Y_colout = Y_tensor[..., kept_row_idx, :]
@@ -217,8 +215,10 @@ class ColOut(Algorithm):
         if (not isinstance(resize_target, bool)) and (isinstance(resize_target, str) and resize_target != 'auto'):
             raise ValueError(f'resize_target must be a boolean or ``auto``. Received: {resize_target}')
 
-        if resize_target is True and batch is False:
-            raise NotImplementedError(f'Resizing targets is not currently support with batch=``False``')
+        if resize_target is True and not batch:
+            raise NotImplementedError(
+                'Resizing targets is not currently support with batch=``False``'
+            )
 
         self.p_row = p_row
         self.p_col = p_col
@@ -230,13 +230,12 @@ class ColOut(Algorithm):
     def match(self, event: Event, state: State) -> bool:
         if self.batch:
             return event == Event.AFTER_DATALOADER
-        else:
-            if event != Event.FIT_START:
-                return False
-            assert state.dataloader is not None, 'dataloader should be defined on fit start'
-            if not isinstance(state.dataloader, torch.utils.data.DataLoader):
-                raise TypeError(f'{type(self).__name__} requires a PyTorch dataloader.')
-            return state.dataloader.dataset not in self._transformed_datasets
+        if event != Event.FIT_START:
+            return False
+        assert state.dataloader is not None, 'dataloader should be defined on fit start'
+        if not isinstance(state.dataloader, torch.utils.data.DataLoader):
+            raise TypeError(f'{type(self).__name__} requires a PyTorch dataloader.')
+        return state.dataloader.dataset not in self._transformed_datasets
 
     def _apply_sample(self, state: State) -> None:
         """Add the ColOut dataset transform to the dataloader."""

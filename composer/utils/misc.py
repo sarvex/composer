@@ -39,11 +39,7 @@ def is_model_fsdp(model: torch.nn.Module) -> bool:
         if isinstance(model, FSDP):
             return True
 
-        # Check if model is wrapped with FSDP
-        for _, obj in model.named_children():
-            if isinstance(obj, FSDP):
-                return True
-        return False
+        return any(isinstance(obj, FSDP) for _, obj in model.named_children())
     except ImportError:
         return False
 

@@ -40,8 +40,8 @@ def _make_padded_input(context_enc, continuation_enc, max_seq_len, pad_tok_id, p
         context_max_subseq_len = max_seq_len - len(continuation_enc)
 
         if context_max_subseq_len < 0:
-            raise Exception(f'Dataset included continuation longer than the max seq len')
-            # can't support continuations which are longer than the max seq len
+            raise Exception('Dataset included continuation longer than the max seq len')
+                    # can't support continuations which are longer than the max seq len
 
         context_enc = context_enc[-(context_max_subseq_len):]
 
@@ -180,8 +180,6 @@ class InContextLearningQATaskDataset(Dataset):
         max_answer_length = 0
         examples = []
         for sample_idx in tqdm(range(len(self.samples))):
-            encoded_example = {}
-
             preamble = prompt_string
 
             if num_fewshot > 0:
@@ -202,8 +200,7 @@ class InContextLearningQATaskDataset(Dataset):
             continuation_delimiter_stripped = continuation_delimiter.rstrip()
             ctxt = f'{ctxt}{continuation_delimiter_stripped}'
 
-            # If the preamble is empty then this will be a 0-length list, unless the tokenizer adds special tokens to empty strings (e.g. OPT tokenizer)
-            encoded_example['preamble'] = self.tokenizer(preamble)
+            encoded_example = {'preamble': self.tokenizer(preamble)}
             # If there is an EOS token added, we need to remove it so it is not in the middle of the prompt
             if self.tokenizer.eos_token_id is not None and len(
                     encoded_example['preamble']
@@ -359,8 +356,6 @@ class InContextLearningLMTaskDataset(Dataset):
         """
         examples = []
         for sample_idx in tqdm(range(len(self.samples))):
-            encoded_example = {}
-
             preamble = prompt_string
 
             if num_fewshot > 0:
@@ -382,9 +377,7 @@ class InContextLearningLMTaskDataset(Dataset):
                 cont = f' {cont}'
             ctxt += continuation_delimiter_stripped
 
-            encoded_example['preamble'] = self.tokenizer(
-                preamble
-            )  # if the preamble is empty then these will be 0-length lists, unless the tokenizer adds special tokens to empty strings (e.g. OPT tokenizer)
+            encoded_example = {'preamble': self.tokenizer(preamble)}
             if self.tokenizer.eos_token_id is not None and len(
                     encoded_example['preamble']
                 ['input_ids']) > 1 and encoded_example['preamble']['input_ids'][-1] == self.tokenizer.eos_token_id:
@@ -542,7 +535,6 @@ class InContextLearningMultipleChoiceTaskDataset(Dataset):
                         query = f'{example_delimiter}{query}'
                     assert isinstance(gold_idx, int)
                     preamble += f'{query}{continuation_delimiter}{choices[gold_idx]}'
-            encoded_example = {}
             query, choices, gold_idx = self.samples[sample_idx]['query'], self.samples[sample_idx][
                 'choices'], self.samples[sample_idx]['gold'],
             if len(preamble) > 0:
@@ -554,10 +546,7 @@ class InContextLearningMultipleChoiceTaskDataset(Dataset):
             if self.prefix_space:
                 choices = [(f' {choice}' if not choice.startswith(' ') else choice) for choice in choices]
             query += continuation_delimiter_stripped
-            encoded_example['preamble'] = self.tokenizer(
-                preamble
-            )  # if the preamble is empty then these will be 0-length lists, unless the tokenizer adds special tokens to empty strings (e.g. OPT tokenizer)
-
+            encoded_example = {'preamble': self.tokenizer(preamble)}
             if self.tokenizer.eos_token_id is not None and len(
                     encoded_example['preamble']
                 ['input_ids']) > 1 and encoded_example['preamble']['input_ids'][-1] == self.tokenizer.eos_token_id:
@@ -852,7 +841,19 @@ def build_icl_dataloader(
     question_prelimiter: str = '',  # e.g. 'Question: '
     fewshot_random_seed: int = 1234,
 ) -> DataSpec:
-    if icl_task_type == 'multiple_choice':
+    if icl_task_type == 'language_modeling':
+        dataset = InContextLearningLMTaskDataset(dataset_uri,
+                                                 tokenizer,
+                                                 max_seq_len,
+                                                 pad_tok_id,
+                                                 num_fewshot,
+                                                 prompt_string,
+                                                 example_delimiter,
+                                                 continuation_delimiter,
+                                                 destination_path=destination_path,
+                                                 fewshot_random_seed=fewshot_random_seed)
+        effective_batchsize = batch_size
+    elif icl_task_type == 'multiple_choice':
         dataset = InContextLearningMultipleChoiceTaskDataset(dataset_uri,
                                                              tokenizer,
                                                              max_seq_len,
@@ -865,31 +866,6 @@ def build_icl_dataloader(
                                                              fewshot_random_seed=fewshot_random_seed)
         batch_size = max(dataset.num_choices, batch_size)
         effective_batchsize = batch_size // dataset.num_choices
-    elif icl_task_type == 'schema':
-        dataset = InContextLearningSchemaTaskDataset(dataset_uri,
-                                                     tokenizer,
-                                                     max_seq_len,
-                                                     pad_tok_id,
-                                                     num_fewshot,
-                                                     prompt_string,
-                                                     example_delimiter,
-                                                     continuation_delimiter,
-                                                     destination_path=destination_path,
-                                                     fewshot_random_seed=fewshot_random_seed)
-        batch_size = max(dataset.num_choices, batch_size)
-        effective_batchsize = batch_size // dataset.num_choices
-    elif icl_task_type == 'language_modeling':
-        dataset = InContextLearningLMTaskDataset(dataset_uri,
-                                                 tokenizer,
-                                                 max_seq_len,
-                                                 pad_tok_id,
-                                                 num_fewshot,
-                                                 prompt_string,
-                                                 example_delimiter,
-                                                 continuation_delimiter,
-                                                 destination_path=destination_path,
-                                                 fewshot_random_seed=fewshot_random_seed)
-        effective_batchsize = batch_size
     elif icl_task_type == 'question_answering':
         dataset = InContextLearningQATaskDataset(dataset_uri,
                                                  tokenizer,
@@ -903,6 +879,19 @@ def build_icl_dataloader(
                                                  question_prelimiter=question_prelimiter,
                                                  fewshot_random_seed=fewshot_random_seed)
         effective_batchsize = batch_size
+    elif icl_task_type == 'schema':
+        dataset = InContextLearningSchemaTaskDataset(dataset_uri,
+                                                     tokenizer,
+                                                     max_seq_len,
+                                                     pad_tok_id,
+                                                     num_fewshot,
+                                                     prompt_string,
+                                                     example_delimiter,
+                                                     continuation_delimiter,
+                                                     destination_path=destination_path,
+                                                     fewshot_random_seed=fewshot_random_seed)
+        batch_size = max(dataset.num_choices, batch_size)
+        effective_batchsize = batch_size // dataset.num_choices
     else:
         raise Exception(f'Unrecognized ICL task type: {icl_task_type}')
 
@@ -950,7 +939,7 @@ def partition_dataset_by_category(dataset_uri: str, destination_path: str) -> Di
     dataset = load_dataset('json', data_files=destination_path, split='train', streaming=False)
     if 'category' not in dataset.features.keys():
         raise Exception(
-            f"Attempted to partition dataset by `category` but it doesn't have a `category` key. Got keys: {str(list(dataset.features.keys()))}"
+            f"Attempted to partition dataset by `category` but it doesn't have a `category` key. Got keys: {list(dataset.features.keys())}"
         )
     categories = sorted(set(dataset['category']))
     output_files = {}
@@ -1029,29 +1018,7 @@ def get_icl_task_dataloader(
         DataLoader: A dataloader used for performing in-context learning evaluation on the dataset provided.
     """
 
-    if has_categories:
-        result_dls = {}
-        output_files = partition_dataset_by_category(dataset_uri, destination_path)
-        categories = sorted(output_files.keys())
-        for category in categories:
-            partition_uri = output_files[category]
-            result_dls[category] = build_icl_dataloader(
-                icl_task_type,
-                partition_uri,
-                tokenizer,
-                batch_size,
-                max_seq_len,
-                pad_tok_id,
-                num_fewshot,
-                prompt_string,
-                example_delimiter,
-                continuation_delimiter,
-                partition_uri + '_tmp',
-                question_prelimiter,
-                fewshot_random_seed,
-            )
-        return result_dls
-    else:
+    if not has_categories:
         return build_icl_dataloader(
             icl_task_type,
             dataset_uri,
@@ -1067,3 +1034,24 @@ def get_icl_task_dataloader(
             question_prelimiter,
             fewshot_random_seed,
         )
+    result_dls = {}
+    output_files = partition_dataset_by_category(dataset_uri, destination_path)
+    categories = sorted(output_files.keys())
+    for category in categories:
+        partition_uri = output_files[category]
+        result_dls[category] = build_icl_dataloader(
+            icl_task_type,
+            partition_uri,
+            tokenizer,
+            batch_size,
+            max_seq_len,
+            pad_tok_id,
+            num_fewshot,
+            prompt_string,
+            example_delimiter,
+            continuation_delimiter,
+            f'{partition_uri}_tmp',
+            question_prelimiter,
+            fewshot_random_seed,
+        )
+    return result_dls

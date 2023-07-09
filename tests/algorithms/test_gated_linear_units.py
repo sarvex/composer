@@ -54,7 +54,7 @@ def assert_is_glu_instance(model):
     from transformers import BertForMaskedLM, BertForSequenceClassification
     from transformers.models.bert.modeling_bert import BertOutput
 
-    assert isinstance(model, BertForMaskedLM) or isinstance(model, BertForSequenceClassification)
+    assert isinstance(model, (BertForMaskedLM, BertForSequenceClassification))
     # ensure that within the entire model, no BertOutput exists, and at least one BERTGatedFFOutput does.
     assert model.modules is not None, 'model has .modules method'
     for module_class in model.modules():
@@ -116,8 +116,9 @@ def test_gated_linear_units_algorithm(model, dataloader, empty_logger: Logger):
     gated_linear_units = GatedLinearUnits()
 
     # state.model wrapped in HuggingFaceModel wrapped
-    assert isinstance(state.model.model, BertForMaskedLM) or isinstance(state.model.model,
-                                                                        BertForSequenceClassification)
+    assert isinstance(
+        state.model.model, (BertForMaskedLM, BertForSequenceClassification)
+    )
     gated_linear_units.apply(Event.INIT, state, empty_logger)
 
     assert_is_glu_instance(state.model.model)

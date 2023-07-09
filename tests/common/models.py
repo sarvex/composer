@@ -312,8 +312,7 @@ class SimpleTransformerMaskedLM(ComposerClassifier):
             inputs, _ = batch
         else:
             inputs = batch['input_ids']
-        outputs = self.module(inputs)
-        return outputs
+        return self.module(inputs)
 
     def update_metric(self, batch: Any, outputs: Any, metric: Metric) -> None:
         if isinstance(batch, tuple):
@@ -417,8 +416,7 @@ class SimpleModelWithDropout(ComposerClassifier):
     def forward(self, batch: Tuple[torch.Tensor, Any]) -> torch.Tensor:
         inputs, _ = batch
         inputs = inputs.squeeze(dim=0)
-        outputs = self.module(inputs)
-        return outputs
+        return self.module(inputs)
 
 
 # Note: These methods are an alternative to the tiny_bert fixtures in fixtures.py.

@@ -99,7 +99,7 @@ class OptimizerMonitor(Callback):
 
                 metric_reporter = getattr(state.optimizers[0], 'report_per_parameter_metrics', None)
                 if callable(metric_reporter) and self.log_optimizer_metrics:
-                    optimizer_metrics.update(metric_reporter(p, name, optimizer_metrics))
+                    optimizer_metrics |= metric_reporter(p, name, optimizer_metrics)
 
                 # Always log grad norm as a default metric if it's not specified
                 if f'l2_norm/grad/{name}' not in optimizer_metrics:
@@ -116,7 +116,7 @@ class OptimizerMonitor(Callback):
             #
             # For example, L2 norms are squared on each rank before we apply all_reduce(SUM) and take the sqrt on each rank
             pre_reduce_metrics = getattr(state.optimizers[0], 'pre_reduce_metrics', None)
-            if callable(pre_reduce_metrics) and self.log_optimizer_metrics:
+            if callable(pre_reduce_metrics):
                 optimizer_metrics = pre_reduce_metrics(optimizer_metrics)
 
             dist_reduce_metrics = getattr(state.optimizers[0], 'dist_reduce_metrics', None)

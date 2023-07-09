@@ -57,9 +57,8 @@ def get_torch_dtype(dtype: Union[Precision, str]):
     elif dtype in ['float8', 'torch.float8', 'fp8', 'amp_fp8']:
         if hasattr(torch, 'float8'):
             raise NotImplementedError('Torch has enabled float8. This should be updated to `return torch.float8`')
-        else:
-            warnings.warn('We use torch.bfloat16 by default for amp_fp8 as there is no fp8 datatype in PyTorch yet.')
-            return torch.bfloat16
+        warnings.warn('We use torch.bfloat16 by default for amp_fp8 as there is no fp8 datatype in PyTorch yet.')
+        return torch.bfloat16
     else:
         raise ValueError(f'Not sure how to convert dtype={dtype} to a torch dtype.')
 
@@ -115,7 +114,9 @@ def get_cpu_offload(cpu_offload=False):
 
 def get_process_group(pg, process_group_cache=None):
     """Helper function for configuring and/or retrieving process groups."""
-    warnings.warn(f'Instantiating FSDP with custom process groups is an experimental feature.')
+    warnings.warn(
+        'Instantiating FSDP with custom process groups is an experimental feature.'
+    )
 
     # Return regular process_groups as is, no cacheing
     if pg is None or isinstance(pg, ProcessGroup):
@@ -250,30 +251,29 @@ def _custom_recursive_wrap(module: nn.Module,
         # since the left over parameters exceed the number of params to wrap
         remainder = num_params - total_wrapped_params
         module_kwargs = auto_wrap_policy(module=module, recurse=False, unwrapped_params=remainder)
-        if not only_wrap_children and module_kwargs:
-            module_kwargs = module_kwargs if isinstance(module_kwargs, dict) else {}
-            # backward_prefetch_map
-            if 'sharding_strategy' in module_kwargs and module_kwargs['sharding_strategy'] not in sharding_map.values():
-                module_kwargs['sharding_strategy'] = sharding_map[module_kwargs['sharding_strategy'].upper()]
-            if 'backward_prefetch' in module_kwargs and module_kwargs[
-                    'backward_prefetch'] not in backward_prefetch_map.values():
-                module_kwargs['backward_prefetch'] = backward_prefetch_map[module_kwargs['backward_prefetch'].upper()]
-            if 'cpu_offload' in module_kwargs and not isinstance(module_kwargs['cpu_offload'], CPUOffload):
-                module_kwargs['cpu_offload'] = get_cpu_offload(cpu_offload=module_kwargs['cpu_offload'].upper())
-            if 'mixed_precision' in module_kwargs and not isinstance(module_kwargs['mixed_precision'], MixedPrecision):
-                # `precision` needs to set `'mixed_precision'`, but `precision` is not part of fsdp kwargs
-                raise NotImplementedError(
-                    f"Automated setting of custom per module mixed_precision is not implemented, but it can be set if `isinstance(module_kwargs['mixed_precision'], MixedPrecision)`"
-                )
-            if 'process_group' in module_kwargs:
-                module_kwargs['process_group'] = get_process_group(module_kwargs['process_group'], process_group_cache)
-
-            final_kwargs = {**kwargs, **module_kwargs}
-
-            # Leaf node or final wrapping of the remainder both happen here.
-            return _wrap(module, wrapper_cls, **final_kwargs), num_params
-        else:
+        if only_wrap_children or not module_kwargs:
             return module, total_wrapped_params
+        module_kwargs = module_kwargs if isinstance(module_kwargs, dict) else {}
+        # backward_prefetch_map
+        if 'sharding_strategy' in module_kwargs and module_kwargs['sharding_strategy'] not in sharding_map.values():
+            module_kwargs['sharding_strategy'] = sharding_map[module_kwargs['sharding_strategy'].upper()]
+        if 'backward_prefetch' in module_kwargs and module_kwargs[
+                'backward_prefetch'] not in backward_prefetch_map.values():
+            module_kwargs['backward_prefetch'] = backward_prefetch_map[module_kwargs['backward_prefetch'].upper()]
+        if 'cpu_offload' in module_kwargs and not isinstance(module_kwargs['cpu_offload'], CPUOffload):
+            module_kwargs['cpu_offload'] = get_cpu_offload(cpu_offload=module_kwargs['cpu_offload'].upper())
+        if 'mixed_precision' in module_kwargs and not isinstance(module_kwargs['mixed_precision'], MixedPrecision):
+                # `precision` needs to set `'mixed_precision'`, but `precision` is not part of fsdp kwargs
+            raise NotImplementedError(
+                "Automated setting of custom per module mixed_precision is not implemented, but it can be set if `isinstance(module_kwargs['mixed_precision'], MixedPrecision)`"
+            )
+        if 'process_group' in module_kwargs:
+            module_kwargs['process_group'] = get_process_group(module_kwargs['process_group'], process_group_cache)
+
+        final_kwargs = {**kwargs, **module_kwargs}
+
+        # Leaf node or final wrapping of the remainder both happen here.
+        return _wrap(module, wrapper_cls, **final_kwargs), num_params
     return module, 0
 
 

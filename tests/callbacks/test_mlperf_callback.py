@@ -109,10 +109,7 @@ class TestWithMLPerfChecker:
     def test_mlperf_callback_passes(self, tmp_path, monkeypatch, benchmark, world_size, device):
 
         def mock_accuracy(self, state: State):
-            if state.timestamp.epoch >= 2:
-                return 0.99
-            else:
-                return 0.01
+            return 0.99 if state.timestamp.epoch >= 2 else 0.01
 
         monkeypatch.setattr(MLPerfCallback, '_get_accuracy', mock_accuracy)
 

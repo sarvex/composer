@@ -179,7 +179,7 @@ class DiceLoss(_Loss):
         super().__init__(reduction=reduction)
         if sigmoid and softmax:
             raise ValueError('Both sigmoid and softmax should not be true.')
-        if not reduction in ['none', 'mean', 'sum']:
+        if reduction not in {'none', 'mean', 'sum'}:
             raise ValueError(f'reduction was {reduction}, but must be one of ["none", "mean", "sum"]')
 
         self.sigmoid = sigmoid
@@ -204,8 +204,8 @@ class DiceLoss(_Loss):
         if self.sigmoid:
             input = torch.sigmoid(input)
 
-        n_pred_ch = input.shape[1]
         if self.softmax:
+            n_pred_ch = input.shape[1]
             if n_pred_ch == 1:
                 warnings.warn('single channel prediction, `softmax=True` ignored.')
             else:
@@ -237,11 +237,7 @@ class DiceLoss(_Loss):
         ious = 1.0 - (2.0 * intersection + epsilon) / (union + epsilon)
 
         if self.ignore_absent_classes:
-            if self.batch:
-                ious = ious[ground_o > 0]
-            else:
-                ious = ious[:, (ground_o.sum(dim=0) > 0)]
-
+            ious = ious[ground_o > 0] if self.batch else ious[:, (ground_o.sum(dim=0) > 0)]
         if self.reduction == 'mean':
             iou = torch.mean(ious)  # the batch and channel average
         elif self.reduction == 'sum':

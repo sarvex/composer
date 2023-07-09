@@ -41,9 +41,8 @@ def disable_wandb(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureReques
     monkeypatch.setenv('WANDB_START_METHOD', 'thread')
     if request.node.get_closest_marker('remote') is None:
         monkeypatch.setenv('WANDB_MODE', 'offline')
-    else:
-        if not os.environ.get('WANDB_PROJECT'):
-            monkeypatch.setenv('WANDB_PROJECT', 'pytest')
+    elif not os.environ.get('WANDB_PROJECT'):
+        monkeypatch.setenv('WANDB_PROJECT', 'pytest')
 
 
 @pytest.fixture(autouse=True, scope='session')

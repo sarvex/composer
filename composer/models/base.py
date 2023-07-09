@@ -68,10 +68,7 @@ class ComposerModel(torch.nn.Module, abc.ABC):
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            if k == 'logger':
-                copied_v = v
-            else:
-                copied_v = copy.deepcopy(v, memo)
+            copied_v = v if k == 'logger' else copy.deepcopy(v, memo)
             setattr(result, k, copied_v)
         return result
 

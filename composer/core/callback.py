@@ -82,7 +82,6 @@ class Callback(Serializable, abc.ABC):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         # Stub signature for pyright
         del args, kwargs  # unused
-        pass
 
     def run_event(self, event: Event, state: State, logger: Logger) -> None:
         """Called by the engine on each event.
@@ -103,7 +102,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def after_load(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.AFTER_LOAD` event.
@@ -113,7 +111,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def fit_start(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.FIT_START` event.
@@ -123,7 +120,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def epoch_start(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EPOCH_START` event.
@@ -133,7 +129,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def before_dataloader(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.BEFORE_DATALOADER` event.
@@ -143,7 +138,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def after_dataloader(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.AFTER_DATALOADER` event.
@@ -153,7 +147,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def batch_start(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.BATCH_START` event.
@@ -163,7 +156,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def before_train_batch(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.BEFORE_TRAIN_BATCH` event.
@@ -173,7 +165,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def before_forward(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.BEFORE_FORWARD` event.
@@ -183,7 +174,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def after_forward(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.AFTER_FORWARD` event.
@@ -193,7 +183,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def before_loss(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.BEFORE_LOSS` event.
@@ -203,7 +192,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def after_loss(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.AFTER_LOSS` event.
@@ -213,7 +201,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def before_backward(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.BEFORE_BACKWARD` event.
@@ -223,7 +210,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def after_backward(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.AFTER_BACKWARD` event.
@@ -233,7 +219,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def after_train_batch(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.AFTER_TRAIN_BATCH` event.
@@ -243,7 +228,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def batch_end(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.BATCH_END` event.
@@ -272,7 +256,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def batch_checkpoint(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.BATCH_CHECKPOINT` event.
@@ -282,7 +265,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def epoch_end(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EPOCH_END` event.
@@ -297,7 +279,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def epoch_checkpoint(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EPOCH_CHECKPOINT` event.
@@ -307,7 +288,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def predict_start(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.PREDICT_START` event.
@@ -317,7 +297,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def predict_batch_start(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.PREDICT_BATCH_START` event.
@@ -327,7 +306,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def predict_before_forward(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.PREDICT_BATCH_FORWARD` event.
@@ -337,7 +315,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def predict_after_forward(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.PREDICT_AFTER_FORWARD` event.
@@ -347,7 +324,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def predict_batch_end(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.PREDICT_BATCH_END` event.
@@ -357,7 +333,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def predict_end(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.PREDICT_END` event.
@@ -367,7 +342,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def eval_before_all(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EVAL_BEFORE_ALL` event.
@@ -377,7 +351,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def eval_start(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EVAL_START` event.
@@ -387,7 +360,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def eval_batch_start(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EVAL_BATCH_START` event.
@@ -397,7 +369,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def eval_before_forward(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EVAL_BATCH_FORWARD` event.
@@ -407,7 +378,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def eval_after_forward(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EVAL_AFTER_FORWARD` event.
@@ -417,7 +387,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def eval_batch_end(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EVAL_BATCH_END` event.
@@ -427,7 +396,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def eval_end(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EVAL_END` event.
@@ -437,7 +405,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def eval_after_all(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.EVAL_AFTER_ALL` event.
@@ -447,7 +414,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def fit_end(self, state: State, logger: Logger) -> None:
         """Called on the :attr:`.Event.FIT_END` event.
@@ -457,7 +423,6 @@ class Callback(Serializable, abc.ABC):
             logger (Logger): The logger.
         """
         del state, logger  # unused
-        pass
 
     def close(self, state: State, logger: Logger) -> None:
         """Called whenever the trainer finishes training, even when there is an exception.

@@ -74,9 +74,10 @@ def _move_sample_input_to_device(sample_input: Optional[Union[torch.Tensor, dict
             sample_input[i] = _move_sample_input_to_device(sample_input[i], device)
         output = sample_input
     elif isinstance(sample_input, tuple):
-        new_tuple = []
-        for tuple_item in sample_input:
-            new_tuple.append(_move_sample_input_to_device(tuple_item, device))
+        new_tuple = [
+            _move_sample_input_to_device(tuple_item, device)
+            for tuple_item in sample_input
+        ]
         output = tuple(new_tuple)
 
     return output
@@ -139,11 +140,12 @@ def export_for_inference(
     save_format = ExportFormat(save_format)
 
     if is_model_deepspeed(model):
-        raise ValueError(f'Exporting for deepspeed models is currently not supported.')
+        raise ValueError('Exporting for deepspeed models is currently not supported.')
 
     if is_model_ddp(model):
         raise ValueError(
-            f'Directly exporting a DistributedDataParallel model is not supported. Export the module instead.')
+            'Directly exporting a DistributedDataParallel model is not supported. Export the module instead.'
+        )
 
     if is_model_fsdp(model):
         raise ValueError(
@@ -222,7 +224,7 @@ def export_for_inference(
 
             if save_format == ExportFormat.ONNX:
                 if sample_input is None:
-                    raise ValueError(f'sample_input argument is required for onnx export')
+                    raise ValueError('sample_input argument is required for onnx export')
 
                 input_names = []
 
@@ -293,9 +295,9 @@ def export_with_logger(
     Returns:
         None
     """
-    if save_object_store == None and logger.has_file_upload_destination():
+    if save_object_store is None and logger.has_file_upload_destination():
         with tempfile.TemporaryDirectory() as tmpdir:
-            temp_local_save_path = os.path.join(str(tmpdir), f'model')
+            temp_local_save_path = os.path.join(str(tmpdir), 'model')
             export_for_inference(model=model,
                                  save_format=save_format,
                                  save_path=temp_local_save_path,

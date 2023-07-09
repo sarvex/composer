@@ -158,11 +158,11 @@ class EMA(Algorithm):
 
         # Verify that either half_life or smoothing has been specified
         if half_life is None and smoothing is None:
-            raise ValueError(f'Either half_life or smoothing must be specified')
+            raise ValueError('Either half_life or smoothing must be specified')
 
         # Verify that only one of half_life or smoothing has been specified
         if half_life is not None and smoothing is not None:
-            raise ValueError(f'Only one of  half_life or smoothing can be specified')
+            raise ValueError('Only one of  half_life or smoothing can be specified')
 
         # Check timestrings are parsable and convert into time object
         if half_life is not None:
@@ -180,11 +180,11 @@ class EMA(Algorithm):
         elif type(update_interval) is str:
             self.update_interval = Time.from_timestring(update_interval)
         else:
-            raise ValueError(f'update_interval must be None or a time string.')
+            raise ValueError('update_interval must be None or a time string.')
 
         # Verify that the units of half_life and update_interval are compatible if necessary
         if half_life is not None and self.half_life.unit != self.update_interval.unit:
-            raise ValueError(f'Units of half_life and update_interval must match.')
+            raise ValueError('Units of half_life and update_interval must match.')
 
         # Verify that the time strings have supported units.
         if self.update_interval.unit not in [TimeUnit.BATCH, TimeUnit.EPOCH]:
@@ -209,15 +209,10 @@ class EMA(Algorithm):
     def _should_start(self, state: State) -> bool:
         if self.ema_start.unit == TimeUnit.DURATION:
             current_time = state.get_elapsed_duration()
-            if current_time is not None:
-                should_start = (self.ema_start <= current_time)
-            else:
-                should_start = False
+            return (self.ema_start <= current_time) if current_time is not None else False
         else:
             current_time = state.timestamp.get(self.ema_start.unit).value
-            should_start = (self.ema_start.value <= current_time)
-
-        return should_start
+            return (self.ema_start.value <= current_time)
 
     def _ensure_training_weights_active(self, state: State):
         if self.ema_weights_active is True and self.ema_model is not None:
@@ -271,7 +266,7 @@ class EMA(Algorithm):
 
         assert self.ema_model is not None
 
-        if event == Event.FIT_START or event == Event.PREDICT_START:
+        if event in [Event.FIT_START, Event.PREDICT_START]:
             # Ensure that params are on the right device if a checkpoint has been loaded
             self.ema_model.move_params_to_device(destination_model=state.model)
 
@@ -336,13 +331,16 @@ class EMA(Algorithm):
                 if key in state_dict:
                     named_buffers_dict[key] = state_dict[key]
         else:
-            ValueError(f'ema_model must be initialized before loading state dicts from versions earlier than 0.13.0')
+            ValueError(
+                'ema_model must be initialized before loading state dicts from versions earlier than 0.13.0'
+            )
 
         # Update the state dict with the new format
         del state['training_model']
-        state['ema_model'] = {}
-        state['ema_model']['named_parameters_dict'] = named_parameters_dict
-        state['ema_model']['named_buffers_dict'] = named_buffers_dict
+        state['ema_model'] = {
+            'named_parameters_dict': named_parameters_dict,
+            'named_buffers_dict': named_buffers_dict,
+        }
         return state
 
     def load_state_dict(self, state: Dict[str, Any], strict: bool = False):

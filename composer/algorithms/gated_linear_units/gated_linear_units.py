@@ -91,7 +91,7 @@ def apply_gated_linear_units(model: torch.nn.Module,
 
     if act_fn is None:
         intermediate_modules = {module for module in model.modules() if isinstance(module, BertIntermediate)}
-        if len(intermediate_modules) == 0:
+        if not intermediate_modules:
             warnings.warn(
                 NoEffectWarning('No instances of BertIntermediate were found so Gated Linear Units will be skipped '
                                 'as no modules can be replaced. This is likely because Gated Linear Units has already '

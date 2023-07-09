@@ -88,9 +88,8 @@ class ThresholdStopper(Callback):
         if self.dataloader_label == 'train':
             if self.monitor in state.train_metrics:
                 return state.train_metrics[self.monitor].compute()
-        else:
-            if self.monitor in state.eval_metrics[self.dataloader_label]:
-                return state.eval_metrics[self.dataloader_label][self.monitor].compute()
+        elif self.monitor in state.eval_metrics[self.dataloader_label]:
+            return state.eval_metrics[self.dataloader_label][self.monitor].compute()
         raise ValueError(f"Couldn't find the metric {self.monitor} with the dataloader label {self.dataloader_label}."
                          "Check that the dataloader_label is set to 'eval', 'train' or the evaluator name.")
 

@@ -127,10 +127,9 @@ class OCIObjectStore(ObjectStore):
         if os.path.exists(filename) and not overwrite:
             raise FileExistsError(f'The file at {filename} already exists and overwrite is set to False')
 
-        dirname = os.path.dirname(filename)
-        if dirname:
+        if dirname := os.path.dirname(filename):
             os.makedirs(dirname, exist_ok=True)
-        tmp_path = str(filename) + f'.{uuid.uuid4()}.tmp'
+        tmp_path = f'{str(filename)}.{uuid.uuid4()}.tmp'
 
         try:
             response = self.client.get_object(

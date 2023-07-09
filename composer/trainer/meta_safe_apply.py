@@ -30,7 +30,7 @@ def meta_safe_apply(self, fn, ignored_modules: Set, module_name: str):
     """
     for name, module in self.named_children():
         module_name_list = [module_name, name]
-        if module_name == '':
+        if not module_name:
             module_name_list = [name]
         curr_module_name = concatenate_strings(module_name_list)
         meta_safe_apply(module, fn, ignored_modules, curr_module_name)

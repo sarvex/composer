@@ -207,5 +207,4 @@ def _convert_to_comet_mask(mask: Union[np.ndarray, torch.Tensor]):
                                 a sequence of 2D masks or 3D batch of 2D masks .'''))
 
     num_classes = int(torch.max(mask)) + 1
-    one_hot_mask = nn.functional.one_hot(mask, num_classes).permute(2, 0, 1).bool()
-    return one_hot_mask
+    return nn.functional.one_hot(mask, num_classes).permute(2, 0, 1).bool()

@@ -91,8 +91,7 @@ class Dice(Metric):
         """Aggregate the state over all processes to compute the metric."""
         dice = 100 * self.dice / self.n_updates  # type: ignore
         best_sum_dice = dice[:]
-        top_dice = round(torch.mean(best_sum_dice).item(), 2)
-        return top_dice
+        return round(torch.mean(best_sum_dice).item(), 2)
 
     @staticmethod
     def compute_stats(preds: Tensor, targets: Tensor):

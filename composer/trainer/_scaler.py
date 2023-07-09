@@ -123,7 +123,7 @@ class ClosureGradScaler(GradScaler):
                 for found_inf in state['found_inf_per_device'].values()
             ]
 
-            assert len(found_infs) > 0, 'No inf checks were recorded prior to update.'
+            assert found_infs, 'No inf checks were recorded prior to update.'
 
             found_inf_combined = found_infs[0]
             if len(found_infs) > 1:

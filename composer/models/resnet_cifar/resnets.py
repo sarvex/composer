@@ -103,7 +103,7 @@ class ResNetCIFAR(nn.Module):
         """
 
         if not ResNetCIFAR.is_valid_model_name(model_name):
-            raise ValueError('Invalid model name: {}'.format(model_name))
+            raise ValueError(f'Invalid model name: {model_name}')
 
         depth = int(model_name.split('_')[-1])  # for resnet56, depth 56, width 16
         if len(model_name.split('_')) == 2:
@@ -112,7 +112,7 @@ class ResNetCIFAR(nn.Module):
             width = int(model_name.split('_')[3])
 
         if (depth - 2) % 3 != 0:
-            raise ValueError('Invalid ResNetCIFAR depth: {}'.format(depth))
+            raise ValueError(f'Invalid ResNetCIFAR depth: {depth}')
         num_blocks = (depth - 2) // 6
 
         model_arch = {

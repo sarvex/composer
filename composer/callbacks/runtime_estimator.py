@@ -100,9 +100,7 @@ class RuntimeEstimator(Callback):
             elif self.train_dataloader_len is not None:
                 return state.timestamp.get('ba').value / (state.max_duration.value * self.train_dataloader_len)
         elapsed_dur = state.get_elapsed_duration()
-        if elapsed_dur is not None:
-            return elapsed_dur.value
-        return None
+        return elapsed_dur.value if elapsed_dur is not None else None
 
     def batch_start(self, state: State, logger: Logger) -> None:
         if self._enabled and self.start_time is None and self.batches_left_to_skip == 0:

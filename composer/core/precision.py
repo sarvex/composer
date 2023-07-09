@@ -74,12 +74,11 @@ def get_precision_context(precision: Union[str, Precision]) -> Generator[None, N
             fp8_recipe = DelayedScaling(fp8_format=fp8_format, amax_history_len=16, amax_compute_algo='max')
             with te.fp8_autocast(enabled=True, fp8_recipe=fp8_recipe):
                 yield
+        elif te_installed:
+            raise RuntimeError('AMP_FP8 precision is used but current device does not support it.')
         else:
-            if te_installed:
-                raise RuntimeError('AMP_FP8 precision is used but current device does not support it.')
-            else:
-                raise ImportError(
-                    textwrap.dedent("""\
+            raise ImportError(
+                textwrap.dedent("""\
                         AMP_FP8 precision is used but TransformerEngine is not installed.
                         After making sure torch is already installed, please install it using
                         pip install --upgrade git+https://github.com/NVIDIA/TransformerEngine.git@stable"""))

@@ -144,21 +144,21 @@ def add_vision_dataset_transform(dataset: VisionDataset, transform: Callable, is
 
     if dataset.transform is None:
         dataset.transform = transform
-        log.warning(transform_added_logstring)
     elif isinstance(dataset.transform, transforms.Compose):
-        insertion_index = len(dataset.transform.transforms)
-        for i, t in enumerate(dataset.transform.transforms):
-            if isinstance(t, transforms.ToTensor):
-                insertion_index = i
-                break
+        insertion_index = next(
+            (
+                i
+                for i, t in enumerate(dataset.transform.transforms)
+                if isinstance(t, transforms.ToTensor)
+            ),
+            len(dataset.transform.transforms),
+        )
         if is_tensor_transform:
             insertion_index += 1
         dataset.transform.transforms.insert(insertion_index, transform)
-        log.warning(transform_added_logstring)
-    else:  # transform is some other basic transform, join using Compose
-        if isinstance(dataset.transform, transforms.ToTensor) and not is_tensor_transform:
-            dataset.transform = transforms.Compose([transform, dataset.transform])
-            log.warning(transform_added_logstring)
-        else:
-            dataset.transform = transforms.Compose([dataset.transform, transform])
-            log.warning(transform_added_logstring)
+    elif isinstance(dataset.transform, transforms.ToTensor) and not is_tensor_transform:
+        dataset.transform = transforms.Compose([transform, dataset.transform])
+    else:
+        dataset.transform = transforms.Compose([dataset.transform, transform])
+
+    log.warning(transform_added_logstring)

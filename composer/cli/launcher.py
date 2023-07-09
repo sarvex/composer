@@ -180,7 +180,9 @@ def _parse_args():
 
     if is_multinode:
         if args.base_rank is None and args.node_rank is None:
-            raise ValueError(f'In a multi-node environment, at least one of node_rank and base_rank must be provided.')
+            raise ValueError(
+                'In a multi-node environment, at least one of node_rank and base_rank must be provided.'
+            )
 
         if args.node_rank is None:
             if args.world_size % args.nproc != 0 or args.base_rank % args.nproc != 0:
@@ -338,22 +340,18 @@ def _monitor_processes(processes: Dict[int, subprocess.Popen]):
                 if process.poll() is None:
                     # the process is still running
                     all_processes_finished = False
-                    continue
+                elif process.returncode != 0:
+                    log.error(f'Rank {global_rank} crashed with exit code {process.returncode}.')
+                    process_has_crashed = True
+                    break
                 else:
-                    # return code of 0 implies clean exit
-                    if process.returncode != 0:
-                        log.error(f'Rank {global_rank} crashed with exit code {process.returncode}.')
-                        process_has_crashed = True
-                        break
-                    else:
-                        # exited cleanly
-                        log.info(f'Rank {global_rank} finished successfully.')
+                    # exited cleanly
+                    log.info(f'Rank {global_rank} finished successfully.')
             if process_has_crashed or all_processes_finished:
                 break
             time.sleep(0.1)
     except KeyboardInterrupt:
         print('Ctrl-C received; terminating training processes.')
-        pass
 
 
 def _print_process_exit_status(global_rank: int, process: subprocess.Popen):
@@ -396,14 +394,11 @@ def _cleanup_processes(processes: Dict[int, subprocess.Popen]):
         if process.returncode is None:
             log.info('Killing global rank %s (PID %s) with SIGTERM', global_rank, process.pid)
             # Assuming that child processes correctly handle SIGTERM to cleanup any children
-            try:
+            with contextlib.suppress(ProcessLookupError):
                 os.kill(process.pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
-
     current_time = datetime.datetime.now()
 
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         print((f'Waiting up to {CLEANUP_TIMEOUT.seconds} seconds for all training processes to terminate. '
                'Press Ctrl-C to exit immediately.'))
         while datetime.datetime.now() - current_time < CLEANUP_TIMEOUT:
@@ -412,9 +407,6 @@ def _cleanup_processes(processes: Dict[int, subprocess.Popen]):
             if all(process.returncode is not None for process in processes.values()):
                 break
             time.sleep(0.1)
-    except KeyboardInterrupt:
-        pass
-
     for global_rank, process in processes.items():
         process.poll()
         if process.returncode is None:
@@ -428,10 +420,8 @@ def _cleanup_processes(processes: Dict[int, subprocess.Popen]):
                 # If using SIGKILL, manually kill all child processes, since the main training process
                 # likely won't be able to intercept the signal and clean up its children.
                 for psutil_proc in [proc, *proc.children(recursive=True)]:
-                    try:
+                    with contextlib.suppress(ProcessLookupError):
                         os.kill(psutil_proc.pid, signal.SIGKILL)
-                    except ProcessLookupError:
-                        pass
     for global_rank, process in processes.items():
         process.poll()
         if process.returncode is not None and process.returncode != 0:

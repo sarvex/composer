@@ -48,7 +48,9 @@ class MetricSetterCallback(Callback):
         if self.dataloader_label == 'train':
             state.train_metrics = state.train_metrics if state.train_metrics else {}
         else:
-            state.eval_metrics[self.dataloader_label] = state.eval_metrics.get(self.dataloader_label, dict())
+            state.eval_metrics[self.dataloader_label] = state.eval_metrics.get(
+                self.dataloader_label, {}
+            )
         metric_tensor = torch.tensor(metric_val)
         if self.device is not None:
             self.device.tensor_to_device(metric_tensor)

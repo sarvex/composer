@@ -123,7 +123,7 @@ class TensorboardLogger(LoggerDestination):
         # Give the metrics used for hparams a unique name, so they don't get plotted in the
         # normal metrics plot.
         metrics_for_hparams = {
-            'hparams/' + name: metric
+            f'hparams/{name}': metric
             for name, metric in self.current_metrics.items()
             if 'metric' in name or 'loss' in name
         }

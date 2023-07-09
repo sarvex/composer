@@ -20,11 +20,7 @@ from tests.metrics import MetricSetterCallback
 @pytest.mark.parametrize('unit', [TimeUnit.EPOCH, TimeUnit.BATCH])
 def test_early_stopper(metric_sequence: List[float], unit: TimeUnit, device: str):
 
-    if unit == TimeUnit.EPOCH:
-        dataloader_label = 'eval'
-    else:
-        dataloader_label = 'train'
-
+    dataloader_label = 'eval' if unit == TimeUnit.EPOCH else 'train'
     test_device = DeviceGPU() if device == 'gpu' else DeviceCPU()
 
     early_stopper = EarlyStopper('MulticlassAccuracy', dataloader_label, patience=Time(3, unit))

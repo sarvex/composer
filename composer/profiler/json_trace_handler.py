@@ -181,8 +181,7 @@ class JSONTraceHandler(TraceHandler):  # noqa: D101
                 trace_folder,
                 format_name_with_dist(self.merged_trace_filename, state.run_name),
             )
-            merged_trace_dirname = os.path.dirname(merged_trace_filename)
-            if merged_trace_dirname:
+            if merged_trace_dirname := os.path.dirname(merged_trace_filename):
                 if os.path.exists(merged_trace_filename):
                     os.remove(merged_trace_filename)
         dist.barrier()
@@ -204,11 +203,12 @@ class JSONTraceHandler(TraceHandler):  # noqa: D101
                 args={'name': f'Rank {dist.get_global_rank()} training loop process'})
             self._record_event(
                 name='thread_name',
-                ph='M',  # metadata
+                ph='M',
                 wall_clock_ns=wall_clock_ns,
                 tid=os.getpid(),
                 pid=dist.get_global_rank(),
-                args={'name': f'Training Loop'})
+                args={'name': 'Training Loop'},
+            )
             self._record_event(
                 name='thread_sort_index',
                 ph='M',  # metadata
@@ -270,8 +270,7 @@ class JSONTraceHandler(TraceHandler):  # noqa: D101
                 trace_folder,
                 format_name_with_dist_and_time(self.filename, state.run_name, timestamp),
             )
-            trace_dirname = os.path.dirname(trace_filename)
-            if trace_dirname:
+            if trace_dirname := os.path.dirname(trace_filename):
                 os.makedirs(trace_dirname, exist_ok=True)
             with open(trace_filename, 'w+') as f:
                 is_first_line = True
@@ -311,8 +310,7 @@ class JSONTraceHandler(TraceHandler):  # noqa: D101
                         state.run_name,
                     ),
                 )
-                merged_trace_dirname = os.path.dirname(merged_trace_filename)
-                if merged_trace_dirname:
+                if merged_trace_dirname := os.path.dirname(merged_trace_filename):
                     os.makedirs(merged_trace_dirname, exist_ok=True)
 
                 if os.path.exists(merged_trace_filename):
@@ -357,9 +355,7 @@ class JSONTraceHandler(TraceHandler):  # noqa: D101
         wall_clock_time_ns: int,
     ) -> None:
         ph = 'B' if is_start else 'E'
-        args = {}
-        args['epoch'] = timestamp.epoch.value
-        args['batch'] = timestamp.batch.value
+        args = {'epoch': timestamp.epoch.value, 'batch': timestamp.batch.value}
         self._record_event(
             name=name,
             categories=','.join(categories),
@@ -377,9 +373,7 @@ class JSONTraceHandler(TraceHandler):  # noqa: D101
         timestamp: Timestamp,
         wall_clock_time_ns: int,
     ) -> None:
-        args = {}
-        args['epoch'] = timestamp.epoch.value
-        args['batch'] = timestamp.batch.value
+        args = {'epoch': timestamp.epoch.value, 'batch': timestamp.batch.value}
         self._record_event(
             name=name,
             categories=','.join(categories),

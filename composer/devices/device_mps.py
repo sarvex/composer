@@ -47,5 +47,5 @@ class DeviceMPS(Device):
         return {}
 
     def load_state_dict(self, state: Dict[str, Any]) -> None:
-        if len(state) != 0:
+        if state:
             raise ValueError('MPS device has no state.')

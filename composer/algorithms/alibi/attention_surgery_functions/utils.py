@@ -67,7 +67,7 @@ class PolicyRegistry(Dict[Type[torch.nn.Module], AlibiReplacementFunction]):
         surgery (:file:`composer/utils/module_surgery.py`) and the way ALiBi's implementation uses
         `policy_registry` in :func:`composer.algorithms.alibi.apply_alibi`.
         """
-        if len(modules) == 0:
+        if not modules:
             raise ValueError('Registry decoration without any module class inputs has no effect.')
 
         def _validate_signature(func: Callable):
@@ -187,13 +187,12 @@ def _get_alibi_head_slopes(n_heads: int):
         ratio = start
         return [start * ratio**i for i in range(n_heads)]
 
-    # In the paper, they only train models that have 2^a heads for some a. This function
-    # has some good properties that only occur when the input is a power of 2. To
-    # maintain that even when the number of heads is not a power of 2, we use a
-    # workaround.
     if math.log2(n_heads).is_integer():
         return get_slopes_power_of_2(n_heads)
-    else:
-        closest_power_of_2 = 2**math.floor(math.log2(n_heads))
-        return get_slopes_power_of_2(closest_power_of_2) + _get_alibi_head_slopes(
-            2 * closest_power_of_2)[0::2][:n_heads - closest_power_of_2]
+    closest_power_of_2 = 2**math.floor(math.log2(n_heads))
+    return (
+        get_slopes_power_of_2(closest_power_of_2)
+        + _get_alibi_head_slopes(2 * closest_power_of_2)[::2][
+            : n_heads - closest_power_of_2
+        ]
+    )

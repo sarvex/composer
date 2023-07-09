@@ -217,7 +217,6 @@ class HuggingFaceModel(ComposerModel):
                                                 conda_channel='conda-forge') from e
         loaded_config = get_hf_config_from_composer_state_dict(loaded_state_dict, config_overrides=model_config_kwargs)
 
-        hf_model_state = hf_state['model']
         if model_instantiation_class is not None:
             # If the instantiation class is explicitly provided, use it
             # If a string is provided, attempt to import the class it refers to
@@ -235,13 +234,16 @@ class HuggingFaceModel(ComposerModel):
             assert model_instantiation_class is not None  # pyright
             # The AutoModel* classes have `from_config`, while the PreTrainedModel classes do not
             # pyright can't tell this isn't a string at this point
-            if issubclass(
+            return (
+                model_instantiation_class.from_config(loaded_config)
+                if issubclass(
                     model_instantiation_class,  # type: ignore
-                    transformers.models.auto.auto_factory._BaseAutoModelClass):
-                hf_model = model_instantiation_class.from_config(loaded_config)  # type: ignore
-            else:
-                hf_model = model_instantiation_class(loaded_config)  # type: ignore
+                    transformers.models.auto.auto_factory._BaseAutoModelClass,
+                )
+                else model_instantiation_class(loaded_config)
+            )
         else:
+            hf_model_state = hf_state['model']
             # If the instantiation class is not explicitly provided, attempt to import the saved class and use it
             try:
                 saved_class = import_object(':'.join(hf_model_state['config']['class'].rsplit('.', maxsplit=1)))
@@ -252,8 +254,7 @@ class HuggingFaceModel(ComposerModel):
                         'Please either pass in the class to use explicitly via the model_instantiation_class '
                         f'parameter, or make sure that {hf_model_state["config"]["class"]} is discoverable '
                         'on the python path.'))
-            hf_model = saved_class(loaded_config)
-        return hf_model
+            return saved_class(loaded_config)
 
     @staticmethod
     def hf_from_composer_checkpoint(
@@ -351,22 +352,16 @@ class HuggingFaceModel(ComposerModel):
         return hf_model, hf_tokenizer
 
     def forward(self, batch):
-        if isinstance(batch, Mapping):
-            # Further input validation is left to the huggingface forward call
-            batch = {k: v for k, v in batch.items() if k in self.model_forward_args}
-            output = self.model(**batch)  # type: ignore (thirdparty)
-        else:
+        if not isinstance(batch, Mapping):
             raise ValueError(
                 'Unexpected batch type. Expected a dictionary with keys corresponding to the inputs to the forward function of the Huggingface model'
             )
-        return output
+        # Further input validation is left to the huggingface forward call
+        batch = {k: v for k, v in batch.items() if k in self.model_forward_args}
+        return self.model(**batch)
 
     def loss(self, outputs, batch):
-        if self.config.use_return_dict:
-            return outputs['loss']
-        else:
-            # loss is at index 0 in the output tuple
-            return outputs[0]
+        return outputs['loss'] if self.config.use_return_dict else outputs[0]
 
     def eval_forward(self, batch, outputs: Optional[Any] = None):
         # If the batch mode is generate, we will generate a requested number of tokens using the underlying
@@ -423,11 +418,7 @@ class HuggingFaceModel(ComposerModel):
         return output
 
     def get_metrics(self, is_train: bool = False) -> Dict[str, Metric]:
-        if is_train:
-            metrics = self.train_metrics
-        else:
-            metrics = self.val_metrics
-
+        metrics = self.train_metrics if is_train else self.val_metrics
         return metrics if metrics else {}
 
     def update_metric(self, batch: Any, outputs: Any, metric: Metric) -> None:
@@ -461,15 +452,9 @@ class HuggingFaceModel(ComposerModel):
                 for tokenizer_file_name in tokenizer_dir.iterdir():
                     tokenizer_file_path = tokenizer_dir / tokenizer_file_name
                     tokenizer_file_extension = tokenizer_file_path.suffix
-                    if tokenizer_file_extension == '.txt':
-                        with open(tokenizer_file_path) as _tokenizer_file:
-                            tokenizer_file_content = _tokenizer_file.read().split('\n')
-                    elif tokenizer_file_extension == '.json':
+                    if tokenizer_file_extension == '.json':
                         with open(tokenizer_file_path) as _tokenizer_file:
                             tokenizer_file_content = json.load(_tokenizer_file)
-                    elif tokenizer_file_extension == '.py':
-                        with open(tokenizer_file_path) as _tokenizer_file:
-                            tokenizer_file_content = _tokenizer_file.read()
                     elif tokenizer_file_extension == '.model':
                         try:
                             import sentencepiece as spm
@@ -478,6 +463,11 @@ class HuggingFaceModel(ComposerModel):
                                                                 conda_package='sentencepiece') from e
                         s = spm.SentencePieceProcessor(model_file=str(tokenizer_file_path))
                         tokenizer_file_content = s.serialized_model_proto()
+                    elif tokenizer_file_extension == '.py':
+                        tokenizer_file_content = Path(tokenizer_file_path).read_text()
+                    elif tokenizer_file_extension == '.txt':
+                        with open(tokenizer_file_path) as _tokenizer_file:
+                            tokenizer_file_content = _tokenizer_file.read().split('\n')
                     else:
                         raise ValueError(
                             f'Unexpected file ending {tokenizer_file_name} in output of tokenizer.save_pretrained.')
@@ -518,17 +508,16 @@ class HuggingFaceModel(ComposerModel):
                            **maybe_decoder_input_ids)
             self.dummy_forward_called = True
 
-        if is_model_fsdp(self.model) and using_torch_2():
-            from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+        if not is_model_fsdp(self.model) or not using_torch_2():
+            return self.model.generate(input_ids, pad_token_id=pad_token_id, **kwargs)
+        from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
-            # Note: We need to use the FSDP.summon_full_params context manager here because the generate function
-            # does not seem to gather the weights for the LM head. This solution works because the tied weights of the LM head
-            # are in the root FSDP module, and are summoned by the below context manager. See https://github.com/pytorch/pytorch/issues/100069
-            # for more info.
-            # Note: We use recurse=False here so that we only summon full params for the LM head, not the entire model.
-            with FSDP.summon_full_params(self.model, writeback=False, recurse=False):
-                return self.model.generate(input_ids, pad_token_id=pad_token_id, **kwargs)
-        else:
+        # Note: We need to use the FSDP.summon_full_params context manager here because the generate function
+        # does not seem to gather the weights for the LM head. This solution works because the tied weights of the LM head
+        # are in the root FSDP module, and are summoned by the below context manager. See https://github.com/pytorch/pytorch/issues/100069
+        # for more info.
+        # Note: We use recurse=False here so that we only summon full params for the LM head, not the entire model.
+        with FSDP.summon_full_params(self.model, writeback=False, recurse=False):
             return self.model.generate(input_ids, pad_token_id=pad_token_id, **kwargs)
 
 
@@ -541,7 +530,10 @@ def _is_registered_causal_lm(model: transformers.PreTrainedModel) -> bool:
                                             conda_package='transformers',
                                             conda_channel='conda-forge') from e
     causal_lm_classes = list(MODEL_FOR_CAUSAL_LM_MAPPING.values())
-    return any([isinstance(model, causal_lm_class) for causal_lm_class in causal_lm_classes])
+    return any(
+        isinstance(model, causal_lm_class)
+        for causal_lm_class in causal_lm_classes
+    )
 
 
 def get_hf_config_from_composer_state_dict(state_dict: Dict[str, Any],

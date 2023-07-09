@@ -160,32 +160,31 @@ class WandBLogger(LoggerDestination):
                 table = wandb.Table(columns=[name])
                 for wandb_image in wandb_images:
                     table.add_data(wandb_image)
-                wandb.log({name + ' Table': table}, step=step)
+                wandb.log({f'{name} Table': table}, step=step)
             else:
                 wandb.log({name: list(wandb_images)}, step=step)
 
     def state_dict(self) -> Dict[str, Any]:
         import wandb
 
-        # Storing these fields in the state dict to support run resuming in the future.
-        if self._enabled:
-            if wandb.run is None:
-                raise ValueError('wandb module must be initialized before serialization.')
+        if not self._enabled:
+            return {}
+        if wandb.run is None:
+            raise ValueError('wandb module must be initialized before serialization.')
 
             # If WandB is disabled, most things are RunDisabled objects, which are not
             # pickleable due to overriding __getstate__ but not __setstate__
-            if wandb.run.disabled:
-                return {}
-            else:
-                return {
-                    'name': wandb.run.name,
-                    'project': wandb.run.project,
-                    'entity': wandb.run.entity,
-                    'id': wandb.run.id,
-                    'group': wandb.run.group
-                }
-        else:
-            return {}
+        return (
+            {}
+            if wandb.run.disabled
+            else {
+                'name': wandb.run.name,
+                'project': wandb.run.project,
+                'entity': wandb.run.entity,
+                'id': wandb.run.id,
+                'group': wandb.run.group,
+            }
+        )
 
     def init(self, state: State, logger: Logger) -> None:
         import wandb
@@ -239,7 +238,10 @@ class WandBLogger(LoggerDestination):
             if state.dataloader is not state.train_dataloader:
                 # TODO If not actively training, then it is impossible to tell from the state whether
                 # the trainer is evaluating or predicting. Assuming evaluation in this case.
-                metadata.update({f'eval_timestamp/{k}': v for (k, v) in state.eval_timestamp.state_dict().items()})
+                metadata |= {
+                    f'eval_timestamp/{k}': v
+                    for (k, v) in state.eval_timestamp.state_dict().items()
+                }
 
             # Change the extension so the checkpoint is compatible with W&B's model registry
             if extension == 'pt':
@@ -389,6 +391,6 @@ def _create_wandb_masks_generator(masks: Dict[str, Union[np.ndarray, torch.Tenso
     for all_masks_for_single_example in zip(*list(preprocessed_masks.values())):
         mask_dict = {name: {'mask_data': mask} for name, mask in zip(masks.keys(), all_masks_for_single_example)}
         if mask_class_labels is not None:
-            for k in mask_dict.keys():
+            for k in mask_dict:
                 mask_dict[k].update({'class_labels': mask_class_labels})
         yield mask_dict

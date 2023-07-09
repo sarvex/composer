@@ -29,7 +29,9 @@ def check_position_embeddings(model, max_sequence_length):
     elif isinstance(model.config, transformers.BertConfig):
         position_embedding_attribute = 'model.bert.embeddings.position_embeddings'
     else:
-        raise NotImplementedError('Tests not implemented for model with config=' + str(type(model.config)))
+        raise NotImplementedError(
+            f'Tests not implemented for model with config={str(type(model.config))}'
+        )
 
     pos_embedding_module = attrgetter(position_embedding_attribute)(model)
     pos_embedding_weight = getattr(pos_embedding_module, 'weight')
@@ -71,10 +73,10 @@ def check_batch_reshaping(before, after, length):
 
 def encountered_alibi_warning(caplog):
     """Return true if the caplog shows an alibi warning in the log"""
-    for (logger_name, level, _) in caplog.record_tuples:
-        if 'alibi' in logger_name and level >= 30:  # Warnings are level 30
-            return True
-    return False
+    return any(
+        'alibi' in logger_name and level >= 30
+        for logger_name, level, _ in caplog.record_tuples
+    )
 
 
 def test_warning_is_triggered(caplog):
@@ -126,7 +128,9 @@ class TestAlibi:
         elif isinstance(model.config, transformers.BertConfig):
             max_sequence_length = model.config.max_position_embeddings
         else:
-            raise NotImplementedError('Tests not implemented for model with config=' + str(type(model.config)))
+            raise NotImplementedError(
+                f'Tests not implemented for model with config={str(type(model.config))}'
+            )
 
         dataloader = dataloader(sequence_length=max_sequence_length)
 
@@ -189,7 +193,9 @@ class TestAlibi:
         elif isinstance(model.config, transformers.BertConfig):
             max_sequence_length: int = state.model.config.max_position_embeddings  # type: ignore
         else:
-            raise NotImplementedError('Tests not implemented for model with config=' + str(type(model.config)))
+            raise NotImplementedError(
+                f'Tests not implemented for model with config={str(type(model.config))}'
+            )
 
         # Synthetic dataset has a size of 2 batches per epoch (max duration = 1ep)
         alibi = Alibi(

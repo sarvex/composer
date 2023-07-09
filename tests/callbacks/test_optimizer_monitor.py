@@ -68,7 +68,7 @@ def test_fsdp_optimizer_monitor(device, world_size, use_orig_params):
     in_memory_logger = InMemoryLogger()  # track the logged metrics in the in_memory_logger
     model = SimpleModel(num_classes=100, num_features=100, num_hidden=100)
     for module in model.modules():
-        if len(list(module.parameters())) > 0:
+        if list(module.parameters()):
             module._fsdp_wrap = True
     dataset = RandomClassificationDataset(num_classes=100, shape=(100, 1, 1))
     # Construct the trainer and train

@@ -97,11 +97,7 @@ class DecoupledSGDW(SGD):
                 else:
                     buf.mul_(momentum).add_(d_p, alpha=1 - dampening)
 
-                if nesterov:
-                    d_p = d_p.add(buf, alpha=momentum)
-                else:
-                    d_p = buf
-
+                d_p = d_p.add(buf, alpha=momentum) if nesterov else buf
             if weight_decay != 0:
                 decay_factor = (lr / initial_lr) if initial_lr else 1.0
                 param.mul_(1 - decay_factor * weight_decay)

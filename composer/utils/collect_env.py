@@ -40,6 +40,7 @@ To disable automatic environment report generation, use the :func:`disable_env_r
 function.  Report generation can be re-enabled by using the :func:`enable_env_report` function.
 """
 
+
 import functools
 import json
 import sys
@@ -61,7 +62,7 @@ try:
     from torch.cuda import get_device_name as accel_device_name
     from torch.cuda import is_available as cuda_available
     TORCH_AVAILABLE = True
-except (ImportError,):
+except ImportError:
     TORCH_AVAILABLE = False
 
 # Check if Composer is installed
@@ -69,12 +70,10 @@ try:
     import composer
     from composer.utils import dist
     COMPOSER_AVAILABLE = True
-except (ImportError,):
+except ImportError:
     COMPOSER_AVAILABLE = False
 
-# Check if we're running in a notebook
-IPYTHON_AVAILABLE = is_notebook()
-if IPYTHON_AVAILABLE:
+if IPYTHON_AVAILABLE := is_notebook():
     from composer.utils.import_helpers import import_object
     get_ipython = import_object('IPython:get_ipython')
     nb = get_ipython()
@@ -89,7 +88,6 @@ _EXCEPTHOOK_REGISTERED = False
 _ENV_EXCEPTION_REPORT = True
 
 
-# Same convention as Torch collect_env, create a namedtuple to track collected fields
 class ComposerEnv(NamedTuple):
     composer_version: str
     composer_commit_hash: Optional[str]
@@ -116,13 +114,12 @@ def get_composer_commit_hash() -> Optional[str]:
     if files is None:
         return
     files = [f for f in files if str(f).endswith('direct_url.json')]
-    if len(files) == 0:
+    if not files:
         return
     f = files[0]
     direct_url = json.loads(f.read_text())
     vcs_info = direct_url.get('vcs_info', {})
-    commit_id = vcs_info.get('commit_id')
-    return commit_id
+    return vcs_info.get('commit_id')
 
 
 # Helper functions to get Composer environment information
@@ -296,7 +293,7 @@ CUDA Device Count: {cuda_device_count}
 # Get composer environment info as a dictionary
 def get_composer_env_dict() -> dict:
     """Query Composer pertinent system information as a dict."""
-    mutable_dict = ComposerEnv(
+    return ComposerEnv(
         composer_version=get_composer_version(),
         composer_commit_hash=get_composer_commit_hash(),
         host_processor_model_name=get_host_processor_name(),
@@ -306,7 +303,6 @@ def get_composer_env_dict() -> dict:
         local_world_size=get_local_world_size(),
         cuda_device_count=get_cuda_device_count(),
     )._asdict()
-    return mutable_dict
 
 
 # Get Composer environment info

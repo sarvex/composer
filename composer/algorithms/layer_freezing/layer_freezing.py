@@ -65,10 +65,10 @@ def freeze_layers(
     freeze_percentage = _freeze_schedule(current_duration=current_duration,
                                          freeze_start=freeze_start,
                                          freeze_level=freeze_level)
-    freeze_depth = int(freeze_percentage * len(flat_children[0:-1]))
+    freeze_depth = int(freeze_percentage * len(flat_children[:-1]))
 
     # Freeze the parameters in the chosen layers
-    for i, child in enumerate(flat_children[0:-1]):
+    for i, child in enumerate(flat_children[:-1]):
         if i < freeze_depth:
             for p in child.parameters():
                 _remove_param_from_optimizers(p, optimizers)
@@ -198,7 +198,7 @@ def _get_layers(module: torch.nn.Module, flat_children: List[torch.nn.Module]):
         flat_children (List[torch.nn.Module]): List containing modules.
     """
     # Check if given module has no children and parameters.
-    if (len(list(module.children())) == 0 and len(list(module.parameters())) > 0):
+    if not list(module.children()) and list(module.parameters()):
         flat_children.append(module)
     else:
         # Otherwise, continue the search over its children.

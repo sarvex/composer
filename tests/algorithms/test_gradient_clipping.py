@@ -41,6 +41,9 @@ def simple_model_with_grads():
 
 def cnn_model_with_grads():
     # Make a CNN with all the common parameters: bias, weight matrix, conv filters.
+
+
+
     class myNN(nn.Module):
 
         def __init__(self, n_ch, num_fmaps, h, num_classes, filter_size):
@@ -52,8 +55,8 @@ def cnn_model_with_grads():
         def forward(self, x):
             fmaps = self.conv_model(x)
             vec = torch.mean(fmaps, dim=(2, 3))
-            out = self.mlp(vec)
-            return out
+            return self.mlp(vec)
+
 
     # Generate some gradients.
     N, n_ch, num_fmaps, h, num_classes, filter_size = 8, 3, 4, 4, 3, 3
@@ -198,9 +201,7 @@ if not using_torch_2():
     def _auto_wrap_policy(module: torch.nn.Module, recurse: bool, unwrapped_params: int) -> bool:  # type: ignore
         if recurse:
             return True
-        if hasattr(module, '_fsdp_wrap'):
-            return bool(module._fsdp_wrap)
-        return False
+        return bool(module._fsdp_wrap) if hasattr(module, '_fsdp_wrap') else False
 else:
 
     def _auto_wrap_policy(module: torch.nn.Module, recurse: bool, nonwrapped_numel: int) -> bool:
@@ -208,12 +209,10 @@ else:
             return True
 
         # With Torch 2.0, there is a bug that emits a nasty warning if you wrap a module with no parameters
-        if len(list(module.parameters())) == 0:
+        if not list(module.parameters()):
             return False
 
-        if hasattr(module, '_fsdp_wrap'):
-            return bool(module._fsdp_wrap)
-        return False
+        return bool(module._fsdp_wrap) if hasattr(module, '_fsdp_wrap') else False
 
 
 @pytest.mark.parametrize('model_with_grads', [

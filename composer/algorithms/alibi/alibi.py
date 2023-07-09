@@ -184,8 +184,11 @@ class Alibi(Algorithm):
 
         elif event == Event.AFTER_DATALOADER:
             # Change sequence length by reshaping data
-            if not self.train_sequence_length_scaling == 1 and \
-            hasattr(state, 'batch') and isinstance(state.batch, dict):
+            if (
+                self.train_sequence_length_scaling != 1
+                and hasattr(state, 'batch')
+                and isinstance(state.batch, dict)
+            ):
                 sequence_scaling = self.train_sequence_length_scaling
                 for k, v in state.batch.items():
                     batch_len, sequence_len = v.shape[0], v.shape[1]

@@ -35,5 +35,4 @@ def composer_efficientnetb0(num_classes: int = 1000, drop_connect_rate: float = 
                                              num_classes=num_classes,
                                              drop_connect_rate=drop_connect_rate)
 
-    composer_model = ComposerClassifier(module=model)
-    return composer_model
+    return ComposerClassifier(module=model)
